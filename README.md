@@ -1,6 +1,5 @@
 # Api Forge
 
-A social platform
 
 ## 🛠️ Development Environment Setup
 
