@@ -1,0 +1,43 @@
+version: "3.3"
+
+services:
+  hpcdsystem:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: travelers
+    container_name: travelers-app
+    ports:
+      - "8080:8080"
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      RUNNING_IN_DOCKER: "true"
+      ConnectionStrings__DefaultConnection: >
+        Server=${DB_SERVER};
+        Database=${DB_NAME};
+        User Id=${DB_ID};
+        Password=${DB_PASSWORD};
+        TrustServerCertificate=True;
+        Encrypt=False
+
+    volumes:
+      - ./frontend/dist:/app/wwwroot/
+      - ./backend/bin/Debug/net9.0:/app
+    depends_on:
+      - sqlserver
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      SA_PASSWORD: ${DB_PASSWORD}
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserverdata:/var/opt/mssql
+
+volumes:
+  sqlserverdata:

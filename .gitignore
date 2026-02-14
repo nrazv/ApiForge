@@ -1,0 +1,21 @@
+
+# Editor directories and files
+frontend/.vscode/*
+frontend/!.vscode/extensions.json
+frontend/.idea
+frontend/.DS_Store
+frontend/*.suo
+frontend/*.ntvs*
+frontend/*.njsproj
+frontend/*.sln
+frontend/*.sw?
+
+frontend/node_modules
+frontend/dist
+frontend/package-lock.json
+
+
+backend/bin
+backend/obj
+.env
+.env*
