@@ -20,7 +20,7 @@ Make sure you have the following installed:
 ### 1. Clone the repository
 
 ```bash
-git clone https://MOLM26@dev.azure.com/MOLM26/Grupp%205/_git/Grupp%205
+git clone https://github.com/nrazv/ApiForge.git
 ```
 
 ### 2. Update the `.env` file
