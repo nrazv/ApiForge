@@ -110,4 +110,4 @@ Then refresh your browser — all changes will be applied immediately. **No Dock
 
 2. Restart the Docker container to apply the changes:
 
-   `docker restart travelers-app`
+   `docker restart api-forge-app`
