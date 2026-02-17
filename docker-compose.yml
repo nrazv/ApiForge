@@ -5,8 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: travelers
-    container_name: travelers-app
+    image: api-forge
+    container_name: api-forge-app
     ports:
       - "8080:8080"
 
@@ -25,11 +25,11 @@ services:
       - ./frontend/dist:/app/wwwroot/
       - ./backend/bin/Debug/net9.0:/app
     depends_on:
-      - sqlserver
+      - apiForge-sqlserver
 
-  sqlserver:
+  apiForge-sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver
+    container_name: apiForge-sqlserver
     environment:
       SA_PASSWORD: ${DB_PASSWORD}
       ACCEPT_EULA: "Y"
