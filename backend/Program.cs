@@ -1,11 +1,24 @@
 
 
+using backend.Definition.Repository;
+using backend.Definition.Service;
+
 var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
+builder.Services.AddControllers();
 
 //-------------- App Configs -------------------
 builder.Services.ConfigureConnectionStringForEnv(builder.Configuration, builder.Environment);
+
+
+// Register Services
+builder.Services.AddScoped<IDefinitionService, DefinitionService>();
+
+// Register Repositories
+builder.Services.AddScoped<IDefinitionRepository, DefinitionRepository>();
 builder.Services.AddSwaggerGen();
+
+
+var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -13,6 +26,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.ApplyMigrationsOnRun();
+
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseRouting();
