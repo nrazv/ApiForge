@@ -84,11 +84,11 @@ After executing the `docker-compose up -d --build` command, the services should 
 
 ### Stop the application running container:
 
-    docker stop travelers-app
+    docker stop api-forge-app
 
 ### Stop the sqlserver running container:
 
-    docker stop sqlserver
+    docker stop apiForge-sqlserver
 
 ### 4. Reflect changes in the development environment
 
