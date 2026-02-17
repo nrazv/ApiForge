@@ -60,7 +60,7 @@ docker-compose up -d --build
 - Expose the API and frontend at http://localhost:8080
 
 ```
-travelers/          👈 THIS is the project root
+ApiForge/          👈 THIS is the project root
 │
 ├─ backend/
 │  ├─ Program.cs
