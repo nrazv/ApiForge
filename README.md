@@ -76,7 +76,7 @@ ApiForge/          👈 THIS is the project root
 
 ```
 
-After executing the `docker-compose up -d --build` command, the services should start successfully. You can confirm that both services `travelers-app` and `sqlserver` are running by using the `docker ps` command.
+After executing the `docker-compose up -d --build` command, the services should start successfully. You can confirm that both services `api-forge-app` and `apiForge-sqlserver` are running by using the `docker ps` command.
 
 ### Stop the running containers:
 
