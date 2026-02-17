@@ -53,9 +53,9 @@ docker-compose up -d --build
 
 #### This will:
 
-- Start MSSQL Server in a container named `sqlserver`
+- Start MSSQL Server in a container named `apiForge-sqlserver`
 
-- Build and run the backend & frontend in a container named `ravelers-app`
+- Build and run the backend & frontend in a container named `api-forge-app`
 
 - Expose the API and frontend at http://localhost:8080
 
