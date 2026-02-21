@@ -15,7 +15,9 @@ export default function AdminSetup({ onComplete }: { onComplete: () => void }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
@@ -26,11 +28,31 @@ export default function AdminSetup({ onComplete }: { onComplete: () => void }) {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${apiBase}/api/user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        toast.error(message || "Failed to create admin account");
+        return;
+      }
+
       toast.success("Admin account created! You can now sign in.");
-      setLoading(false);
       onComplete();
-    }, 500);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create admin account");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

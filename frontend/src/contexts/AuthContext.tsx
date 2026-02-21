@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 interface Profile {
   id: string;
@@ -6,6 +6,7 @@ interface Profile {
   must_change_password: boolean;
   is_blocked: boolean;
   email: string;
+  created_at: string;
 }
 
 interface AuthContextType {
@@ -30,35 +31,110 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [adminRegistered, setAdminRegistered] = useState<boolean | null>(true);
   const [session, setSession] = useState<any>(null);
 
-  const mockAdmin = {
-    id: "1",
-    username: "admin",
-    email: "admin@example.com",
-    must_change_password: false,
-    is_blocked: false,
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
+
+  const mapProfile = (data: {
+    Id: string;
+    Username: string;
+    Email: string;
+    MustChangePassword: boolean;
+    IsBlocked: boolean;
+    CreatedAt: string;
+  }): Profile => ({
+    id: data.Id,
+    username: data.Username,
+    email: data.Email,
+    must_change_password: data.MustChangePassword,
+    is_blocked: data.IsBlocked,
+    created_at: data.CreatedAt,
+  });
+
+  const parseErrorMessage = async (response: Response) => {
+    try {
+      const data = await response.json();
+      if (typeof data?.Message === "string") return data.Message;
+      if (typeof data?.message === "string") return data.message;
+      if (typeof data?.error === "string") return data.error;
+    } catch {
+      // ignore parse errors
+    }
+    return response.statusText || "Request failed";
   };
 
   const signIn = async (email: string, password: string) => {
-    if (email === "admin@example.com" && password === "admin123") {
-      setUser(mockAdmin);
-      setProfile(mockAdmin);
-      setIsAdmin(true);
-      setSession({ user: mockAdmin });
+    setLoading(true);
+    try {
+      const response = await fetch(`${apiBase}/api/user/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        return { error: await parseErrorMessage(response) };
+      }
+
+      const data = await response.json();
+      const profileData = mapProfile(data);
+      setUser(profileData);
+      setProfile(profileData);
+      setIsAdmin(false);
+      setSession({ user: profileData });
       return {};
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Login failed" };
+    } finally {
+      setLoading(false);
     }
-    return { error: "Invalid credentials" };
   };
 
   const signOut = async () => {
-    setUser(null);
-    setProfile(null);
-    setIsAdmin(false);
-    setSession(null);
+    try {
+      await fetch(`${apiBase}/api/user/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // ignore network errors on logout
+    } finally {
+      setUser(null);
+      setProfile(null);
+      setIsAdmin(false);
+      setSession(null);
+    }
   };
 
   const refreshProfile = async () => {
-    if (user) setProfile(user);
+    setLoading(true);
+    try {
+      const response = await fetch(`${apiBase}/api/user/info`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        setUser(null);
+        setProfile(null);
+        setIsAdmin(false);
+        setSession(null);
+        return;
+      }
+
+      const data = await response.json();
+      const profileData = mapProfile(data);
+      setUser(profileData);
+      setProfile(profileData);
+      setIsAdmin(false);
+      setSession({ user: profileData });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    refreshProfile();
+  }, []);
 
   return (
     <AuthContext.Provider
