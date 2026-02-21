@@ -1,11 +1,17 @@
 
 
 var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
 
 //-------------- App Configs -------------------
 builder.Services.ConfigureConnectionStringForEnv(builder.Configuration, builder.Environment);
 builder.Services.AddSwaggerGen();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddControllers();
+builder.Services.AddAuthorization();
+builder.Services.AddAuthentication();
+
+var app = builder.Build();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -15,6 +21,7 @@ if (app.Environment.IsDevelopment())
 app.ApplyMigrationsOnRun();
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

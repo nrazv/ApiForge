@@ -5,8 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: travelers
-    container_name: travelers-app
+    image: api-forge-app
+    container_name: api-forge-app
     ports:
       - "8080:8080"
 
@@ -14,12 +14,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       RUNNING_IN_DOCKER: "true"
       ConnectionStrings__DefaultConnection: >
-        Server=${DB_SERVER};
-        Database=${DB_NAME};
-        User Id=${DB_ID};
-        Password=${DB_PASSWORD};
-        TrustServerCertificate=True;
-        Encrypt=False
+        Server=${DB_SERVER}; Database=${DB_NAME}; User Id=${DB_ID}; Password=${DB_PASSWORD}; TrustServerCertificate=True; Encrypt=False
 
     volumes:
       - ./frontend/dist:/app/wwwroot/
