@@ -1,4 +1,5 @@
 using backend.ApplicationUser.Services;
+using backend.Projects.Services;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,7 @@ builder.Services.AddIdentityAndJwt(builder.Configuration);
 
 // Add services 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 var app = builder.Build();
 

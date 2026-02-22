@@ -1,11 +1,8 @@
-using backend.ApplicationUser.Entities;
-using backend.Data;
 using backend.Projects.Dtos;
-using backend.Projects.Entities;
+using backend.Projects.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace backend.Projects.Controller;
@@ -15,13 +12,11 @@ namespace backend.Projects.Controller;
 [Authorize]
 public class ProjectsController : ControllerBase
 {
-    private readonly ApplicationDBContext _dbContext;
-    private readonly UserManager<AppUser> _userManager;
+    private readonly IProjectService _projectService;
 
-    public ProjectsController(ApplicationDBContext dbContext, UserManager<AppUser> userManager)
+    public ProjectsController(IProjectService projectService)
     {
-        _dbContext = dbContext;
-        _userManager = userManager;
+        _projectService = projectService;
     }
 
     [HttpGet]
@@ -33,12 +28,13 @@ public class ProjectsController : ControllerBase
             return Unauthorized();
         }
 
-        var projects = await _dbContext.Projects
-            .Where(p => p.Members.Any(m => m.UserId == userId))
-            .Select(p => new ProjectDto(p.Id, p.Name, p.OwnerId, p.CreatedAt))
-            .ToListAsync();
+        var response = await _projectService.GetMyProjectsAsync(userId);
+        if (!response.IsSuccess)
+        {
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
+        }
 
-        return Ok(projects);
+        return Ok(response.Data);
     }
 
     [HttpPost]
@@ -55,26 +51,13 @@ public class ProjectsController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var project = new Project
+        var response = await _projectService.CreateProjectAsync(userId, dto);
+        if (!response.IsSuccess)
         {
-            Id = Guid.NewGuid(),
-            Name = dto.Name,
-            OwnerId = userId,
-            CreatedAt = DateTime.UtcNow
-        };
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
+        }
 
-        project.Members.Add(new ProjectMember
-        {
-            ProjectId = project.Id,
-            UserId = userId,
-            Role = ProjectRole.Owner,
-            AddedAt = DateTime.UtcNow
-        });
-
-        _dbContext.Projects.Add(project);
-        await _dbContext.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetMyProjects), new ProjectDto(project.Id, project.Name, project.OwnerId, project.CreatedAt));
+        return CreatedAtAction(nameof(GetMyProjects), response.Data);
     }
 
     [HttpPatch("{projectId:guid}")]
@@ -91,24 +74,13 @@ public class ProjectsController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var project = await _dbContext.Projects
-            .Include(p => p.Members)
-            .FirstOrDefaultAsync(p => p.Id == projectId);
-
-        if (project is null)
+        var response = await _projectService.UpdateProjectAsync(userId, projectId, dto);
+        if (!response.IsSuccess)
         {
-            return NotFound();
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
         }
 
-        if (!IsOwner(project, userId))
-        {
-            return Forbid();
-        }
-
-        project.Name = dto.Name;
-        await _dbContext.SaveChangesAsync();
-
-        return Ok(new ProjectDto(project.Id, project.Name, project.OwnerId, project.CreatedAt));
+        return Ok(response.Data);
     }
 
     [HttpDelete("{projectId:guid}")]
@@ -120,22 +92,11 @@ public class ProjectsController : ControllerBase
             return Unauthorized();
         }
 
-        var project = await _dbContext.Projects
-            .Include(p => p.Members)
-            .FirstOrDefaultAsync(p => p.Id == projectId);
-
-        if (project is null)
+        var response = await _projectService.DeleteProjectAsync(userId, projectId);
+        if (!response.IsSuccess)
         {
-            return NotFound();
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
         }
-
-        if (!IsOwner(project, userId))
-        {
-            return Forbid();
-        }
-
-        _dbContext.Projects.Remove(project);
-        await _dbContext.SaveChangesAsync();
 
         return NoContent();
     }
@@ -149,32 +110,13 @@ public class ProjectsController : ControllerBase
             return Unauthorized();
         }
 
-        var project = await _dbContext.Projects
-            .Include(p => p.Members)
-            .ThenInclude(m => m.User)
-            .FirstOrDefaultAsync(p => p.Id == projectId);
-
-        if (project is null)
+        var response = await _projectService.GetMembersAsync(userId, projectId);
+        if (!response.IsSuccess)
         {
-            return NotFound();
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
         }
 
-        if (!IsMember(project, userId))
-        {
-            return Forbid();
-        }
-
-        var members = project.Members
-            .Where(m => m.User is not null)
-            .Select(m => new ProjectMemberDto(
-                m.UserId,
-                m.UserId,
-                m.User!.UserName ?? string.Empty,
-                m.User!.Email ?? string.Empty
-            ))
-            .ToList();
-
-        return Ok(members);
+        return Ok(response.Data);
     }
 
     [HttpPost("{projectId:guid}/members")]
@@ -191,50 +133,13 @@ public class ProjectsController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var project = await _dbContext.Projects
-            .Include(p => p.Members)
-            .FirstOrDefaultAsync(p => p.Id == projectId);
-
-        if (project is null)
+        var response = await _projectService.AddMemberAsync(userId, projectId, dto);
+        if (!response.IsSuccess)
         {
-            return NotFound();
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
         }
 
-        if (!IsOwner(project, userId))
-        {
-            return Forbid();
-        }
-
-        var memberUser = await _userManager.FindByEmailAsync(dto.Email);
-        if (memberUser is null)
-        {
-            return NotFound(new { Message = "User not found" });
-        }
-
-        if (project.Members.Any(m => m.UserId == memberUser.Id))
-        {
-            return Conflict(new { Message = "User already a member" });
-        }
-
-        var member = new ProjectMember
-        {
-            ProjectId = project.Id,
-            UserId = memberUser.Id,
-            Role = ProjectRole.Member,
-            AddedAt = DateTime.UtcNow
-        };
-
-        project.Members.Add(member);
-        await _dbContext.SaveChangesAsync();
-
-        var response = new ProjectMemberDto(
-            memberUser.Id,
-            memberUser.Id,
-            memberUser.UserName ?? string.Empty,
-            memberUser.Email ?? string.Empty
-        );
-
-        return Ok(response);
+        return Ok(response.Data);
     }
 
     [HttpDelete("{projectId:guid}/members/{memberId}")]
@@ -246,33 +151,11 @@ public class ProjectsController : ControllerBase
             return Unauthorized();
         }
 
-        var project = await _dbContext.Projects
-            .Include(p => p.Members)
-            .FirstOrDefaultAsync(p => p.Id == projectId);
-
-        if (project is null)
+        var response = await _projectService.RemoveMemberAsync(userId, projectId, memberId);
+        if (!response.IsSuccess)
         {
-            return NotFound();
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
         }
-
-        if (!IsOwner(project, userId))
-        {
-            return Forbid();
-        }
-
-        if (project.OwnerId == memberId)
-        {
-            return BadRequest(new { Message = "Owner cannot be removed" });
-        }
-
-        var member = project.Members.FirstOrDefault(m => m.UserId == memberId);
-        if (member is null)
-        {
-            return NotFound();
-        }
-
-        _dbContext.ProjectMembers.Remove(member);
-        await _dbContext.SaveChangesAsync();
 
         return NoContent();
     }
@@ -282,13 +165,5 @@ public class ProjectsController : ControllerBase
         return User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
-    private static bool IsOwner(Project project, string userId)
-    {
-        return project.OwnerId == userId || project.Members.Any(m => m.UserId == userId && m.Role == ProjectRole.Owner);
-    }
 
-    private static bool IsMember(Project project, string userId)
-    {
-        return project.Members.Any(m => m.UserId == userId);
-    }
 }
