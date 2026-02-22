@@ -17,6 +17,7 @@ interface Project {
   id: string;
   name: string;
   owner_id: string;
+  owner_username: string;
   created_at: string;
 }
 
@@ -58,15 +59,18 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
     Id?: string;
     Name?: string;
     OwnerId?: string;
+    OwnerUsername?: string;
     CreatedAt?: string;
     id?: string;
     name?: string;
     ownerId?: string;
+    ownerUsername?: string;
     createdAt?: string;
   }): Project => ({
     id: data.Id ?? data.id ?? "",
     name: data.Name ?? data.name ?? "",
     owner_id: data.OwnerId ?? data.ownerId ?? "",
+    owner_username: data.OwnerUsername ?? data.ownerUsername ?? "",
     created_at: data.CreatedAt ?? data.createdAt ?? "",
   });
 
@@ -304,7 +308,7 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">Projects</h1>
+            <h1 className="text-2xl font-bold" style={{ height: "40px" }}>Projects</h1>
           </div>
           {view !== "member" && (
             <CreateProjectDialog
@@ -342,6 +346,7 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
                     onDelete={() => handleDelete(project)}
                     onMembers={() => openMembersProject(project)}
                     onApis={() => openApis(project.id)}
+                    ownerLabel={project.owner_username || project.owner_id}
                   />
                 ))}
               </div>

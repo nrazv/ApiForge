@@ -6,6 +6,7 @@ interface Project {
     id: string;
     name: string;
     owner_id: string;
+    owner_username: string;
     created_at: string;
 }
 
@@ -16,9 +17,18 @@ interface ProjectCardProps {
     onDelete: () => void;
     onMembers: () => void;
     onApis: () => void;
+    ownerLabel?: string;
 }
 
-export default function ProjectCard({ project, canEdit, onEdit, onDelete, onMembers, onApis }: ProjectCardProps) {
+export default function ProjectCard({
+    project,
+    canEdit,
+    onEdit,
+    onDelete,
+    onMembers,
+    onApis,
+    ownerLabel,
+}: ProjectCardProps) {
 
     return (
         <Card key={project.id} className="group transition-colors hover:border-primary/30">
@@ -49,6 +59,9 @@ export default function ProjectCard({ project, canEdit, onEdit, onDelete, onMemb
                 <CardDescription>
                     Created {new Date(project.created_at).toLocaleDateString()}
                 </CardDescription>
+                {ownerLabel && (
+                    <p className="mt-1 text-xs text-muted-foreground">Owner: {ownerLabel}</p>
+                )}
             </CardHeader>
             <CardContent className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={onMembers}>

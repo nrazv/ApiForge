@@ -24,7 +24,13 @@ internal class ProjectService : IProjectService
     {
         var projects = await _dbContext.Projects
             .Where(p => p.Members.Any(m => m.UserId == userId))
-            .Select(p => new ProjectDto(p.Id, p.Name, p.OwnerId, p.CreatedAt))
+            .Select(p => new ProjectDto(
+                p.Id,
+                p.Name,
+                p.OwnerId,
+                p.Owner != null ? p.Owner.UserName ?? string.Empty : string.Empty,
+                p.CreatedAt
+            ))
             .ToListAsync();
 
         return OperationResult<IEnumerable<ProjectDto>>.Success(projects);
@@ -32,6 +38,7 @@ internal class ProjectService : IProjectService
 
     public async Task<OperationResult<ProjectDto>> CreateProjectAsync(string userId, CreateProjectDto dto)
     {
+        var owner = await _userManager.FindByIdAsync(userId);
         var project = new Project
         {
             Id = Guid.NewGuid(),
@@ -51,7 +58,13 @@ internal class ProjectService : IProjectService
         _dbContext.Projects.Add(project);
         await _dbContext.SaveChangesAsync();
 
-        return OperationResult<ProjectDto>.Success(new ProjectDto(project.Id, project.Name, project.OwnerId, project.CreatedAt));
+        return OperationResult<ProjectDto>.Success(new ProjectDto(
+            project.Id,
+            project.Name,
+            project.OwnerId,
+            owner?.UserName ?? string.Empty,
+            project.CreatedAt
+        ));
     }
 
     public async Task<OperationResult<ProjectDto>> UpdateProjectAsync(string userId, Guid projectId, UpdateProjectDto dto)
@@ -73,7 +86,14 @@ internal class ProjectService : IProjectService
         project.Name = dto.Name;
         await _dbContext.SaveChangesAsync();
 
-        return OperationResult<ProjectDto>.Success(new ProjectDto(project.Id, project.Name, project.OwnerId, project.CreatedAt));
+        var owner = await _userManager.FindByIdAsync(project.OwnerId);
+        return OperationResult<ProjectDto>.Success(new ProjectDto(
+            project.Id,
+            project.Name,
+            project.OwnerId,
+            owner?.UserName ?? string.Empty,
+            project.CreatedAt
+        ));
     }
 
     public async Task<OperationResult<bool>> DeleteProjectAsync(string userId, Guid projectId)

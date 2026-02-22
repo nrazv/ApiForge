@@ -4,5 +4,6 @@ public record ProjectDto(
     Guid Id,
     string Name,
     string OwnerId,
+    string OwnerUsername,
     DateTime CreatedAt
 );
