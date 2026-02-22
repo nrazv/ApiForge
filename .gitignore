@@ -19,3 +19,4 @@ backend/bin
 backend/obj
 .env
 .env*
+data-protection/
