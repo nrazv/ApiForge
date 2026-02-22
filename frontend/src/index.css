@@ -1,68 +1,95 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import url('@fontsource-variable/inter');
+@import url('@fontsource/jetbrains-mono');
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+@layer base {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    --background: 220 20% 97%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+    --primary: 173 58% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 220 20% 20%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 173 40% 92%;
+    --accent-foreground: 173 58% 25%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 14% 89%;
+    --input: 220 14% 89%;
+    --ring: 173 58% 39%;
+    --radius: 0.625rem;
+    --sidebar-background: 220 20% 98%;
+    --sidebar-foreground: 220 10% 30%;
+    --sidebar-primary: 173 58% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 173 40% 94%;
+    --sidebar-accent-foreground: 173 58% 25%;
+    --sidebar-border: 220 14% 91%;
+    --sidebar-ring: 173 58% 39%;
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --surface: 0 0% 100%;
+    --surface-foreground: 220 20% 10%;
+    --mono: 'JetBrains Mono', monospace;
   }
-  a:hover {
-    color: #747bff;
+
+  .dark {
+    --background: 222 22% 8%;
+    --foreground: 210 20% 92%;
+    --card: 222 18% 12%;
+    --card-foreground: 210 20% 92%;
+    --popover: 222 18% 12%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 173 58% 45%;
+    --primary-foreground: 222 22% 8%;
+    --secondary: 222 14% 18%;
+    --secondary-foreground: 210 20% 85%;
+    --muted: 222 14% 16%;
+    --muted-foreground: 215 14% 55%;
+    --accent: 173 30% 16%;
+    --accent-foreground: 173 58% 65%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 14% 18%;
+    --input: 222 14% 20%;
+    --ring: 173 58% 45%;
+    --sidebar-background: 222 20% 10%;
+    --sidebar-foreground: 210 14% 70%;
+    --sidebar-primary: 173 58% 45%;
+    --sidebar-primary-foreground: 222 22% 8%;
+    --sidebar-accent: 173 20% 14%;
+    --sidebar-accent-foreground: 173 58% 65%;
+    --sidebar-border: 222 14% 16%;
+    --sidebar-ring: 173 58% 45%;
+    --success: 152 60% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 0%;
+    --surface: 222 18% 14%;
+    --surface-foreground: 210 20% 92%;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  }
+  .font-mono {
+    font-family: var(--mono);
   }
 }

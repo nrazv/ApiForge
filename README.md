@@ -20,7 +20,7 @@ Make sure you have the following installed:
 ### 1. Clone the repository
 
 ```bash
-git clone https://MOLM26@dev.azure.com/MOLM26/Grupp%205/_git/Grupp%205
+git clone https://github.com/nrazv/ApiForge.git
 ```
 
 ### 2. Update the `.env` file
@@ -53,14 +53,14 @@ docker-compose up -d --build
 
 #### This will:
 
-- Start MSSQL Server in a container named `sqlserver`
+- Start MSSQL Server in a container named `apiForge-sqlserver`
 
-- Build and run the backend & frontend in a container named `ravelers-app`
+- Build and run the backend & frontend in a container named `api-forge-app`
 
 - Expose the API and frontend at http://localhost:8080
 
 ```
-travelers/          👈 THIS is the project root
+ApiForge/          👈 THIS is the project root
 │
 ├─ backend/
 │  ├─ Program.cs
@@ -76,7 +76,7 @@ travelers/          👈 THIS is the project root
 
 ```
 
-After executing the `docker-compose up -d --build` command, the services should start successfully. You can confirm that both services `travelers-app` and `sqlserver` are running by using the `docker ps` command.
+After executing the `docker-compose up -d --build` command, the services should start successfully. You can confirm that both services `api-forge-app` and `apiForge-sqlserver` are running by using the `docker ps` command.
 
 ### Stop the running containers:
 
@@ -84,11 +84,11 @@ After executing the `docker-compose up -d --build` command, the services should 
 
 ### Stop the application running container:
 
-    docker stop travelers-app
+    docker stop api-forge-app
 
 ### Stop the sqlserver running container:
 
-    docker stop sqlserver
+    docker stop apiForge-sqlserver
 
 ### 4. Reflect changes in the development environment
 
@@ -110,4 +110,4 @@ Then refresh your browser — all changes will be applied immediately. **No Dock
 
 2. Restart the Docker container to apply the changes:
 
-   `docker restart travelers-app`
+   `docker restart api-forge-app`
