@@ -2,10 +2,20 @@ using backend.ApplicationUser.Services;
 using backend.Projects.Services;
 using Microsoft.AspNetCore.Identity;
 
+using backend.Definition.Repository;
+using backend.Definition.Service;
+
 var builder = WebApplication.CreateBuilder(args);
 
 //-------------- App Configs -------------------
 builder.Services.ConfigureConnectionStringForEnv(builder.Configuration, builder.Environment);
+
+
+// Register Services
+builder.Services.AddScoped<IDefinitionService, DefinitionService>();
+
+// Register Repositories
+builder.Services.AddScoped<IDefinitionRepository, DefinitionRepository>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
@@ -40,6 +50,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.ApplyMigrationsOnRun();
+
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();

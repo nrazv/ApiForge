@@ -30,7 +30,7 @@ public class Repository<T> : IRepository<T> where T : class
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+    public async Task<IEnumerable<T>> FindAllAsync(Expression<Func<T, bool>> predicate)
     {
         return await dbSet.Where(predicate).ToListAsync();
     }
@@ -59,5 +59,10 @@ public class Repository<T> : IRepository<T> where T : class
     public async Task<int> DeleteWhereAsync(Expression<Func<T, bool>> predicate)
     {
         return await dbSet.Where(predicate).ExecuteDeleteAsync();
+    }
+
+    public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await dbSet.Where(predicate).FirstOrDefaultAsync();
     }
 }

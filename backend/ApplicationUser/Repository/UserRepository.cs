@@ -28,7 +28,12 @@ internal class UserRepository : IUserRepository
         throw new NotImplementedException();
     }
 
-    public Task<IEnumerable<AppUser>> FindAsync(Expression<Func<AppUser, bool>> predicate)
+    public Task<IEnumerable<AppUser>> FindAllAsync(Expression<Func<AppUser, bool>> predicate)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<AppUser?> FindAsync(Expression<Func<AppUser, bool>> predicate)
     {
         throw new NotImplementedException();
     }
