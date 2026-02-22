@@ -87,7 +87,7 @@ export default function ProjectCard({
                     <Button
                         variant="outline"
                         size="sm"
-                        className="border-emerald-600/50 text-emerald-700 hover:border-emerald-600 hover:text-emerald-700"
+                        className="border-emerald-600/50 text-emerald-700 hover:border-emerald-600 hover:text-emerald-700 w-[120px]"
                         onClick={onApis}
                     >
                         <Zap className="mr-1.5 h-3.5 w-3.5" />
