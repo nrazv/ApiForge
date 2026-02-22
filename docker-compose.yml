@@ -19,6 +19,7 @@ services:
     volumes:
       - ./frontend/dist:/app/wwwroot/
       - ./backend/bin/Debug/net9.0:/app
+      - ./data-protection:/root/.aspnet/DataProtection-Keys
     depends_on:
       - apiForge-sqlserver
 
