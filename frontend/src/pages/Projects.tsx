@@ -111,7 +111,7 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
     };
 
     fetchProjects();
-  }, []);
+  }, [apiBase]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

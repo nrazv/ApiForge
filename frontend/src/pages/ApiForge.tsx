@@ -66,7 +66,7 @@ export default function ApiForge() {
       setSelectedProjectId(mockProjects[0].id);
     }
     setLoading(false);
-  }, []);
+  }, [projectIdParam, selectedProjectId]);
 
   useEffect(() => {
     if (!selectedProjectId) return;

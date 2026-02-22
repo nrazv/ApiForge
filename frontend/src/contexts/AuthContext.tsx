@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 
 interface Profile {
   id: string;
@@ -11,7 +12,7 @@ interface Profile {
 
 interface AuthContextType {
   user: Profile | null;
-  session: any;
+  session: Session;
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
@@ -19,17 +20,19 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
 }
 
+type Session = { user: Profile } | null;
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session>(null);
 
   const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
 
-  const mapProfile = (data: {
+  const mapProfile = useCallback((data: {
     Id?: string;
     Username?: string;
     Email?: string;
@@ -49,9 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     must_change_password: data.MustChangePassword ?? data.mustChangePassword ?? false,
     is_blocked: data.IsBlocked ?? data.isBlocked ?? false,
     created_at: data.CreatedAt ?? data.createdAt ?? "",
-  });
+  }), []);
 
-  const readJsonIfPossible = async (response: Response) => {
+  const readJsonIfPossible = useCallback(async (response: Response) => {
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.includes("application/json")) {
       return null;
@@ -62,9 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       return null;
     }
-  };
+  }, []);
 
-  const parseErrorMessage = async (response: Response) => {
+  const parseErrorMessage = useCallback(async (response: Response) => {
     try {
       const data = await readJsonIfPossible(response);
       if (typeof data?.Message === "string") return data.Message;
@@ -75,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const fallbackText = await response.text().catch(() => "");
     return fallbackText || response.statusText || "Request failed";
-  };
+  }, [readJsonIfPossible]);
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
@@ -122,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`${apiBase}/api/user/info`, {
@@ -151,11 +154,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBase, mapProfile, readJsonIfPossible]);
 
   useEffect(() => {
     refreshProfile();
-  }, []);
+  }, [refreshProfile]);
 
   return (
     <AuthContext.Provider
