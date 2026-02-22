@@ -5,20 +5,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
-import AdminSetup from "@/pages/AdminSetup";
 import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 import ChangePassword from "@/pages/ChangePassword";
 import Projects from "@/pages/Projects";
 import ApiForge from "@/pages/ApiForge";
-import UserManagement from "@/pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const { user, profile, isAdmin, loading, adminRegistered } = useAuth();
+  const { user, profile, loading } = useAuth();
 
-  if (loading || adminRegistered === null) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -26,12 +25,14 @@ function AppRoutes() {
     );
   }
 
-  if (!adminRegistered) {
-    return <AdminSetup onComplete={() => window.location.reload()} />;
-  }
-
   if (!user) {
-    return <Login />;
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
   }
 
   if (profile?.must_change_password) {
@@ -53,9 +54,10 @@ function AppRoutes() {
     <AppLayout>
       <Routes>
         <Route path="/" element={<Navigate to="/projects" replace />} />
-        <Route path="/projects" element={<Projects />} />
+        <Route path="/projects" element={<Navigate to="/projects/owned" replace />} />
+        <Route path="/projects/owned" element={<Projects view="owned" />} />
+        <Route path="/projects/member" element={<Projects view="member" />} />
         <Route path="/api-forge" element={<ApiForge />} />
-        {isAdmin && <Route path="/admin/users" element={<UserManagement />} />}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>

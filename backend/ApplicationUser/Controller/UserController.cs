@@ -1,8 +1,10 @@
 using backend.ApplicationUser.Dto;
+using backend.ApplicationUser.Entities;
 using backend.ApplicationUser.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using backend.ApplicationUser.Dtos;
 
@@ -14,10 +16,12 @@ public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly IConfiguration _configuration;
-    public UserController(IUserService userService, IConfiguration configuration)
+    private readonly SignInManager<AppUser> _signInManager;
+    public UserController(IUserService userService, IConfiguration configuration, SignInManager<AppUser> signInManager)
     {
         _userService = userService;
         _configuration = configuration;
+        _signInManager = signInManager;
     }
 
     [HttpPost(Name = "Creates a new user")]
@@ -53,15 +57,6 @@ public class UserController : ControllerBase
 
         if (response.Data.JwtToken is string && response.Data.User is AppUserDto)
         {
-            var expiryMinutes = _configuration.GetValue<int>("Jwt:ExpiryMinutes", 60);
-            Response.Cookies.Append("access_token", response.Data.JwtToken, new CookieOptions
-            {
-                HttpOnly = true,                  // JS can't read it (helps vs token theft) 
-                Secure = Request.IsHttps,
-                SameSite = SameSiteMode.Lax,      // good default for many apps 
-                Path = "/",                       // send cookie to all endpoints
-                Expires = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
-            });
             return Ok(response.Data.User);
         }
 
@@ -117,10 +112,10 @@ public class UserController : ControllerBase
         return Ok();
     }
 
-
     [HttpPost("logout")]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout()
     {
+        await _signInManager.SignOutAsync();
         Response.Cookies.Delete("access_token", new CookieOptions
         {
             Path = "/"

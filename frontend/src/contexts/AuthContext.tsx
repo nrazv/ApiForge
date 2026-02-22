@@ -13,9 +13,7 @@ interface AuthContextType {
   user: Profile | null;
   session: any;
   profile: Profile | null;
-  isAdmin: boolean;
   loading: boolean;
-  adminRegistered: boolean | null;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -26,39 +24,57 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [adminRegistered, setAdminRegistered] = useState<boolean | null>(true);
+  const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
 
   const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
 
   const mapProfile = (data: {
-    Id: string;
-    Username: string;
-    Email: string;
-    MustChangePassword: boolean;
-    IsBlocked: boolean;
-    CreatedAt: string;
+    Id?: string;
+    Username?: string;
+    Email?: string;
+    MustChangePassword?: boolean;
+    IsBlocked?: boolean;
+    CreatedAt?: string;
+    id?: string;
+    username?: string;
+    email?: string;
+    mustChangePassword?: boolean;
+    isBlocked?: boolean;
+    createdAt?: string;
   }): Profile => ({
-    id: data.Id,
-    username: data.Username,
-    email: data.Email,
-    must_change_password: data.MustChangePassword,
-    is_blocked: data.IsBlocked,
-    created_at: data.CreatedAt,
+    id: data.Id ?? data.id ?? "",
+    username: data.Username ?? data.username ?? "",
+    email: data.Email ?? data.email ?? "",
+    must_change_password: data.MustChangePassword ?? data.mustChangePassword ?? false,
+    is_blocked: data.IsBlocked ?? data.isBlocked ?? false,
+    created_at: data.CreatedAt ?? data.createdAt ?? "",
   });
+
+  const readJsonIfPossible = async (response: Response) => {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) {
+      return null;
+    }
+
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
+  };
 
   const parseErrorMessage = async (response: Response) => {
     try {
-      const data = await response.json();
+      const data = await readJsonIfPossible(response);
       if (typeof data?.Message === "string") return data.Message;
       if (typeof data?.message === "string") return data.message;
       if (typeof data?.error === "string") return data.error;
     } catch {
-      // ignore parse errors
+      console.error("Failed to parse error message from response");
     }
-    return response.statusText || "Request failed";
+    const fallbackText = await response.text().catch(() => "");
+    return fallbackText || response.statusText || "Request failed";
   };
 
   const signIn = async (email: string, password: string) => {
@@ -75,11 +91,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: await parseErrorMessage(response) };
       }
 
-      const data = await response.json();
+      const data = await readJsonIfPossible(response);
+      if (!data) {
+        return { error: "Unexpected response from server" };
+      }
       const profileData = mapProfile(data);
       setUser(profileData);
       setProfile(profileData);
-      setIsAdmin(false);
       setSession({ user: profileData });
       return {};
     } catch (error) {
@@ -96,11 +114,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: "include",
       });
     } catch {
-      // ignore network errors on logout
+      console.error("Failed to log out");
     } finally {
       setUser(null);
       setProfile(null);
-      setIsAdmin(false);
       setSession(null);
     }
   };
@@ -116,16 +133,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         setUser(null);
         setProfile(null);
-        setIsAdmin(false);
         setSession(null);
         return;
       }
 
-      const data = await response.json();
+      const data = await readJsonIfPossible(response);
+      if (!data) {
+        setUser(null);
+        setProfile(null);
+        setSession(null);
+        return;
+      }
       const profileData = mapProfile(data);
       setUser(profileData);
       setProfile(profileData);
-      setIsAdmin(false);
       setSession({ user: profileData });
     } finally {
       setLoading(false);
@@ -142,9 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         profile,
-        isAdmin,
         loading,
-        adminRegistered,
         signIn,
         signOut,
         refreshProfile,

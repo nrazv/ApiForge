@@ -2,20 +2,17 @@ import { ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Users, FolderKanban, Zap, LogOut, Shield } from "lucide-react";
+import { FolderSymlink, FolderKanban, Zap, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { to: "/projects", icon: FolderKanban, label: "Projects" },
+  { to: "/projects/owned", icon: FolderKanban, label: "My Projects" },
+  { to: "/projects/member", icon: FolderSymlink, label: "Member Projects" },
   { to: "/api-forge", icon: Zap, label: "API Forge" },
 ];
 
-const adminItems = [
-  { to: "/admin/users", icon: Users, label: "User Management" },
-];
-
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -53,44 +50,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
 
-          {isAdmin && (
-            <>
-              <div className="my-3 border-t border-sidebar-border" />
-              <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Admin
-              </div>
-              {adminItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                    )
-                  }
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </NavLink>
-              ))}
-            </>
-          )}
         </nav>
 
         <div className="border-t border-sidebar-border p-3">
           <div className="flex items-center gap-3 rounded-lg px-3 py-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-              {isAdmin ? <Shield className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+              <User className="h-4 w-4" />
             </div>
             <div className="flex-1 truncate">
               <p className="truncate text-sm font-medium text-sidebar-foreground font-mono">
                 {profile?.username || "—"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {isAdmin ? "Administrator" : "User"}
               </p>
             </div>
           </div>
