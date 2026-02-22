@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2, Users, Zap } from "lucide-react";
+import { LogOut, Pencil, Trash2, Users, Zap } from "lucide-react";
 
 interface Project {
     id: string;
@@ -17,6 +17,7 @@ interface ProjectCardProps {
     onDelete: () => void;
     onMembers: () => void;
     onApis: () => void;
+    onLeave?: () => void;
     ownerLabel?: string;
 }
 
@@ -27,6 +28,7 @@ export default function ProjectCard({
     onDelete,
     onMembers,
     onApis,
+    onLeave,
     ownerLabel,
 }: ProjectCardProps) {
 
@@ -35,26 +37,39 @@ export default function ProjectCard({
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                     <CardTitle className="text-lg">{project.name}</CardTitle>
-                    {canEdit && (
-                        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="flex items-center gap-2">
+                        {onLeave && (
                             <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={onEdit}
+                                variant="outline"
+                                size="sm"
+                                className="border-rose-800/40 text-rose-900 hover:border-rose-800 hover:text-rose-900"
+                                onClick={onLeave}
                             >
-                                <Pencil className="h-3.5 w-3.5" />
+                                <LogOut className="mr-1.5 h-3.5 w-3.5" />
+                                Leave
                             </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={onDelete}
-                            >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
-                        </div>
-                    )}
+                        )}
+                        {canEdit && (
+                            <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={onEdit}
+                                >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={onDelete}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <CardDescription>
                     Created {new Date(project.created_at).toLocaleDateString()}
@@ -63,15 +78,22 @@ export default function ProjectCard({
                     <p className="mt-1 text-xs text-muted-foreground">Owner: {ownerLabel}</p>
                 )}
             </CardHeader>
-            <CardContent className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={onMembers}>
-                    <Users className="mr-1.5 h-3.5 w-3.5" />
-                    Members
-                </Button>
-                <Button variant="outline" size="sm" onClick={onApis}>
-                    <Zap className="mr-1.5 h-3.5 w-3.5" />
-                    APIs
-                </Button>
+            <CardContent className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={onMembers}>
+                        <Users className="mr-1.5 h-3.5 w-3.5" />
+                        Members
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-emerald-600/50 text-emerald-700 hover:border-emerald-600 hover:text-emerald-700"
+                        onClick={onApis}
+                    >
+                        <Zap className="mr-1.5 h-3.5 w-3.5" />
+                        APIs
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );

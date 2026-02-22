@@ -207,7 +207,8 @@ internal class ProjectService : IProjectService
             return Failure<bool>("Project not found", StatusCodes.Status404NotFound);
         }
 
-        if (!IsOwner(project, userId))
+        var isSelfRemoval = userId == memberId;
+        if (!isSelfRemoval && !IsOwner(project, userId))
         {
             return Failure<bool>("Forbidden", StatusCodes.Status403Forbidden);
         }

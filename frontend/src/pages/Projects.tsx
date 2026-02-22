@@ -270,6 +270,34 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
     }
   };
 
+  const handleLeaveProject = async (project: Project) => {
+    if (!user) return;
+    if (!confirm(`Leave project "${project.name}"?`)) return;
+    try {
+      const response = await fetch(
+        `${apiBase}/api/projects/${project.id}/members/${user.id}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        toast.error(await parseErrorMessage(response));
+        return;
+      }
+
+      setProjects((prev) => prev.filter((p) => p.id !== project.id));
+      if (membersProject?.id === project.id) {
+        setMembersProject(null);
+        setMembers([]);
+      }
+      toast.success("Left project");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to leave project");
+    }
+  };
+
   const ownedProjects = user ? projects.filter((project) => project.owner_id === user.id) : [];
   const memberProjects = user ? projects.filter((project) => project.owner_id !== user.id) : [];
 
@@ -346,6 +374,7 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
                     onDelete={() => handleDelete(project)}
                     onMembers={() => openMembersProject(project)}
                     onApis={() => openApis(project.id)}
+                    onLeave={() => handleLeaveProject(project)}
                     ownerLabel={project.owner_username || project.owner_id}
                   />
                 ))}
