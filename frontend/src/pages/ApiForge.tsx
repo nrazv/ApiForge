@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,7 +56,7 @@ export default function ApiForge() {
     owner_username: data.OwnerUsername ?? data.ownerUsername,
   });
 
-  const getActiveProjects = (): Project[] => {
+  const getActiveProjects = useCallback((): Project[] => {
     const raw = localStorage.getItem(activeProjectsKey);
     if (!raw) return [];
     try {
@@ -65,29 +65,29 @@ export default function ApiForge() {
     } catch {
       return [];
     }
-  };
+  }, []);
 
-  const setActiveProjects = (next: Project[]) => {
+  const setActiveProjects = useCallback((next: Project[]) => {
     if (next.length === 0) {
       localStorage.removeItem(activeProjectsKey);
       return;
     }
     localStorage.setItem(activeProjectsKey, JSON.stringify(next));
-  };
+  }, []);
 
-  const upsertActiveProject = (project: Project) => {
+  const upsertActiveProject = useCallback((project: Project) => {
     const next = getActiveProjects();
     if (!next.some((item) => item.id === project.id)) {
       next.push({ id: project.id, name: project.name });
     }
     setActiveProjects(next);
-  };
+  }, [getActiveProjects, setActiveProjects]);
 
-  const removeActiveProject = (id?: string) => {
+  const removeActiveProject = useCallback((id?: string) => {
     if (!id) return;
     const next = getActiveProjects().filter((item) => item.id !== id);
     setActiveProjects(next);
-  };
+  }, [getActiveProjects, setActiveProjects]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -134,7 +134,7 @@ export default function ApiForge() {
     };
 
     fetchProjects();
-  }, [apiBase, navigate, projectId]);
+  }, [apiBase, navigate, projectId, removeActiveProject, upsertActiveProject]);
 
   if (loading) {
     return <div className="p-8 text-muted-foreground">Loading...</div>;

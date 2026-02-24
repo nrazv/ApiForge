@@ -24,6 +24,26 @@ interface ApiField {
     resource_id: string;
 }
 
+interface ApiFieldResponse {
+    Id?: string;
+    Name?: string;
+    Type?: FieldType;
+    id?: string;
+    name?: string;
+    type?: FieldType;
+}
+
+interface ApiResourceResponse {
+    Id?: string;
+    Name?: string;
+    ProjectId?: string;
+    Fields?: ApiFieldResponse[];
+    id?: string;
+    name?: string;
+    projectId?: string;
+    fields?: ApiFieldResponse[];
+}
+
 type FieldType = "string" | "number" | "double";
 
 const fieldTypeColors: Record<string, string> = {
@@ -82,8 +102,8 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                     return;
                 }
 
-                const data = await response.json();
-                const mappedResources: ApiResource[] = (data ?? []).map((model: any) => ({
+                const data = (await response.json()) as ApiResourceResponse[];
+                const mappedResources: ApiResource[] = (data ?? []).map((model) => ({
                     id: model.Id ?? model.id ?? "",
                     name: model.Name ?? model.name ?? "",
                     project_id: model.ProjectId ?? model.projectId ?? projectId,
@@ -94,7 +114,7 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                 for (const model of data ?? []) {
                     const modelId = model.Id ?? model.id ?? "";
                     const modelFields = model.Fields ?? model.fields ?? [];
-                    mappedFields[modelId] = modelFields.map((field: any) => ({
+                    mappedFields[modelId] = modelFields.map((field) => ({
                         id: field.Id ?? field.id ?? `${modelId}:${field.Name ?? field.name ?? "field"}`,
                         name: field.Name ?? field.name ?? "",
                         data_type: (field.Type ?? field.type ?? "string") as FieldType,
@@ -135,7 +155,7 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                 return;
             }
 
-            const data = await response.json();
+            const data = (await response.json()) as ApiResourceResponse;
             const resourceId = data.Id ?? data.id ?? "";
             const resource: ApiResource = {
                 id: resourceId,
@@ -143,7 +163,7 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                 project_id: projectId ?? "",
                 created_at: "",
             };
-            const resourceFields: ApiField[] = (data.Fields ?? data.fields ?? []).map((field: any) => ({
+            const resourceFields: ApiField[] = (data.Fields ?? data.fields ?? []).map((field) => ({
                 id: field.Id ?? field.id ?? `${resourceId}:${field.Name ?? field.name ?? "field"}`,
                 name: field.Name ?? field.name ?? "",
                 data_type: (field.Type ?? field.type ?? "string") as FieldType,
@@ -187,7 +207,7 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                 return;
             }
 
-            const data = await response.json();
+            const data = (await response.json()) as ApiFieldResponse;
             const newField: ApiField = {
                 id: data.Id ?? data.id ?? `${resourceId}:${trimmedName}`,
                 name: data.Name ?? data.name ?? trimmedName,
