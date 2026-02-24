@@ -5,7 +5,7 @@ namespace backend.Definition.Factory;
 
 internal static class DefinitionFactory
 {
-    public static ModelDefinitionEntity FromModelDefinitionCreateDto(ModelDefinitionCreateDto dto)
+    public static ModelDefinitionEntity FromModelDefinitionCreateDto(Guid projectId, ModelDefinitionCreateDto dto)
     {
         Guid modelId = Guid.NewGuid();
         List<FieldDefinitionEntity> NewFields = new();
@@ -23,6 +23,7 @@ internal static class DefinitionFactory
         return new()
         {
             Id = modelId,
+            ProjectId = projectId,
             Name = dto.Name,
             Fields = NewFields
         };
@@ -34,10 +35,10 @@ internal static class DefinitionFactory
         List<FieldDefinitionResponseDto> fields = new();
         foreach (var field in model.Fields)
         {
-            fields.Add(new(Name: field.Name, Type: field.Type));
+            fields.Add(new(Id: field.Id, Name: field.Name, Type: field.Type));
         }
 
-        return new(Id: model.Id, Name: model.Name, Fields: fields);
+        return new(Id: model.Id, ProjectId: model.ProjectId, Name: model.Name, Fields: fields);
     }
 
 }

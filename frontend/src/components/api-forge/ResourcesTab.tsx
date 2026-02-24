@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Zap } from "lucide-react";
+import { Layers, Plus, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 interface ApiResource {
     id: string;
@@ -39,83 +39,226 @@ interface ResourcesTabProps {
 export default function ResourcesTab({ projectId }: ResourcesTabProps) {
     const [resources, setResources] = useState<ApiResource[]>([]);
     const [fields, setFields] = useState<Record<string, ApiField[]>>({});
+    const [loading, setLoading] = useState(true);
     const [createResourceOpen, setCreateResourceOpen] = useState(false);
     const [newResourceName, setNewResourceName] = useState("");
-    const [addFieldResource, setAddFieldResource] = useState<string | null>(null);
-    const [newFieldName, setNewFieldName] = useState("");
-    const [newFieldType, setNewFieldType] = useState<FieldType>("string");
+    const [addFieldOpen, setAddFieldOpen] = useState(false);
+    const [addFieldResourceId, setAddFieldResourceId] = useState<string | null>(null);
+    const [addFieldName, setAddFieldName] = useState("");
+    const [addFieldType, setAddFieldType] = useState<FieldType>("string");
+    const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
+
+    const parseErrorMessage = async (response: Response) => {
+        try {
+            const data = await response.json();
+            if (typeof data?.Message === "string") return data.Message;
+            if (typeof data?.message === "string") return data.message;
+            if (typeof data?.error === "string") return data.error;
+        } catch {
+            console.error("Failed to parse error response");
+        }
+        return response.statusText || "Request failed";
+    };
 
     useEffect(() => {
-        if (!projectId) {
-            setResources([]);
-            setFields({});
-            return;
-        }
-        const mockResources = [
-            { id: "1", name: "Resource 1", project_id: projectId, created_at: "2026-02-18" },
-            { id: "2", name: "Resource 2", project_id: projectId, created_at: "2026-02-18" },
-        ];
-        setResources(mockResources);
-        setFields({
-            "1": [
-                { id: "1", name: "Field 1", resource_id: "1", data_type: "string" },
-                { id: "2", name: "Field 2", resource_id: "1", data_type: "number" },
-            ],
-            "2": [{ id: "3", name: "Field 3", resource_id: "2", data_type: "double" }],
-        });
-    }, [projectId]);
+        const fetchResources = async () => {
+            if (!projectId) {
+                setResources([]);
+                setFields({});
+                setLoading(false);
+                return;
+            }
 
-    const handleCreateResource = (event: React.FormEvent) => {
+            setLoading(true);
+            try {
+                const response = await fetch(`${apiBase}/api/projects/${projectId}/definitions`, {
+                    credentials: "include",
+                });
+
+                if (!response.ok) {
+                    toast.error(await parseErrorMessage(response));
+                    setResources([]);
+                    setFields({});
+                    return;
+                }
+
+                const data = await response.json();
+                const mappedResources: ApiResource[] = (data ?? []).map((model: any) => ({
+                    id: model.Id ?? model.id ?? "",
+                    name: model.Name ?? model.name ?? "",
+                    project_id: model.ProjectId ?? model.projectId ?? projectId,
+                    created_at: "",
+                }));
+
+                const mappedFields: Record<string, ApiField[]> = {};
+                for (const model of data ?? []) {
+                    const modelId = model.Id ?? model.id ?? "";
+                    const modelFields = model.Fields ?? model.fields ?? [];
+                    mappedFields[modelId] = modelFields.map((field: any) => ({
+                        id: field.Id ?? field.id ?? `${modelId}:${field.Name ?? field.name ?? "field"}`,
+                        name: field.Name ?? field.name ?? "",
+                        data_type: (field.Type ?? field.type ?? "string") as FieldType,
+                        resource_id: modelId,
+                    }));
+                }
+
+                setResources(mappedResources);
+                setFields(mappedFields);
+            } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Failed to load resources");
+                setResources([]);
+                setFields({});
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchResources();
+    }, [apiBase, projectId]);
+
+    const handleCreateResource = async (event: React.FormEvent) => {
         event.preventDefault();
         if (!projectId) return;
-        const newId = Date.now().toString();
-        setResources((prev) => [
-            ...prev,
-            { id: newId, name: newResourceName, project_id: projectId, created_at: "2026-02-18" },
-        ]);
-        setFields((prev) => ({ ...prev, [newId]: [] }));
-        toast.success("Resource created");
-        setCreateResourceOpen(false);
-        setNewResourceName("");
-    };
+        try {
+            const response = await fetch(`${apiBase}/api/projects/${projectId}/definitions`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    name: newResourceName,
+                    fields: [],
+                }),
+            });
 
-    const handleDeleteResource = (id: string) => {
-        if (!confirm("Delete this resource and all its fields?")) return;
-        setResources((prev) => prev.filter((r) => r.id !== id));
-        setFields((prev) => {
-            const copy = { ...prev };
-            delete copy[id];
-            return copy;
-        });
-        toast.success("Resource deleted");
-    };
-
-    const handleAddField = (event: React.FormEvent) => {
-        event.preventDefault();
-        if (!addFieldResource) return;
-        const newId = Date.now().toString();
-        setFields((prev) => ({
-            ...prev,
-            [addFieldResource]: [
-                ...(prev[addFieldResource] || []),
-                { id: newId, name: newFieldName, resource_id: addFieldResource, data_type: newFieldType },
-            ],
-        }));
-        toast.success("Field added");
-        setAddFieldResource(null);
-        setNewFieldName("");
-        setNewFieldType("string");
-    };
-
-    const handleDeleteField = (fieldId: string) => {
-        setFields((prev) => {
-            const updated: Record<string, ApiField[]> = {};
-            for (const key in prev) {
-                updated[key] = prev[key].filter((f) => f.id !== fieldId);
+            if (!response.ok) {
+                toast.error(await parseErrorMessage(response));
+                return;
             }
-            return updated;
-        });
-        toast.success("Field deleted");
+
+            const data = await response.json();
+            const resourceId = data.Id ?? data.id ?? "";
+            const resource: ApiResource = {
+                id: resourceId,
+                name: data.Name ?? data.name ?? "",
+                project_id: projectId ?? "",
+                created_at: "",
+            };
+            const resourceFields: ApiField[] = (data.Fields ?? data.fields ?? []).map((field: any) => ({
+                id: field.Id ?? field.id ?? `${resourceId}:${field.Name ?? field.name ?? "field"}`,
+                name: field.Name ?? field.name ?? "",
+                data_type: (field.Type ?? field.type ?? "string") as FieldType,
+                resource_id: resourceId,
+            }));
+
+            setResources((prev) => [...prev, resource]);
+            setFields((prev) => ({ ...prev, [resourceId]: resourceFields }));
+            toast.success("Resource created");
+            setCreateResourceOpen(false);
+            setNewResourceName("");
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Failed to create resource");
+        }
+    };
+    const openAddFieldDialog = (resourceId: string) => {
+        setAddFieldResourceId(resourceId);
+        setAddFieldName("");
+        setAddFieldType("string");
+        setAddFieldOpen(true);
+    };
+
+    const handleAddField = async (resourceId: string, name: string, type: FieldType) => {
+        if (!projectId) return;
+        const trimmedName = name.trim();
+        if (!trimmedName) return;
+
+        try {
+            const response = await fetch(
+                `${apiBase}/api/projects/${projectId}/definitions/${resourceId}/fields`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ name: trimmedName, type }),
+                }
+            );
+
+            if (!response.ok) {
+                toast.error(await parseErrorMessage(response));
+                return;
+            }
+
+            const data = await response.json();
+            const newField: ApiField = {
+                id: data.Id ?? data.id ?? `${resourceId}:${trimmedName}`,
+                name: data.Name ?? data.name ?? trimmedName,
+                data_type: (data.Type ?? data.type ?? type) as FieldType,
+                resource_id: resourceId,
+            };
+
+            setFields((prev) => ({
+                ...prev,
+                [resourceId]: [...(prev[resourceId] || []), newField],
+            }));
+            toast.success("Field added");
+            setAddFieldOpen(false);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Failed to add field");
+        }
+    };
+
+    const handleDeleteResource = async (resourceId: string, resourceName: string) => {
+        if (!projectId) return;
+        if (!confirm(`Delete /${resourceName}? This cannot be undone.`)) return;
+
+        try {
+            const response = await fetch(`${apiBase}/api/projects/${projectId}/definitions/${resourceId}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            if (!response.ok) {
+                toast.error(await parseErrorMessage(response));
+                return;
+            }
+
+            setResources((prev) => prev.filter((resource) => resource.id !== resourceId));
+            setFields((prev) => {
+                const next = { ...prev };
+                delete next[resourceId];
+                return next;
+            });
+            toast.success("Resource deleted");
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Failed to delete resource");
+        }
+    };
+
+    const handleDeleteField = async (resourceId: string, fieldId: string, fieldName: string) => {
+        if (!projectId) return;
+        if (!confirm(`Delete field ${fieldName}? This cannot be undone.`)) return;
+
+        try {
+            const response = await fetch(
+                `${apiBase}/api/projects/${projectId}/definitions/${resourceId}/fields/${fieldId}`,
+                {
+                    method: "DELETE",
+                    credentials: "include",
+                }
+            );
+
+            if (!response.ok) {
+                toast.error(await parseErrorMessage(response));
+                return;
+            }
+
+            setFields((prev) => ({
+                ...prev,
+                [resourceId]: (prev[resourceId] || []).filter((field) => field.id !== fieldId),
+            }));
+            toast.success("Field deleted");
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Failed to delete field");
+        }
     };
 
     return (
@@ -153,10 +296,17 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                 </div>
             )}
 
-            {resources.length === 0 ? (
+            {loading ? (
                 <Card className="border-dashed">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                         <Zap className="mb-4 h-12 w-12 text-muted-foreground/50" />
+                        <p className="text-muted-foreground">Loading resources...</p>
+                    </CardContent>
+                </Card>
+            ) : resources.length === 0 ? (
+                <Card className="border-dashed">
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                        <Layers className="mb-4 h-12 w-12 text-muted-foreground/50" />
                         <p className="text-muted-foreground">No resources yet. Create one to define your API.</p>
                     </CardContent>
                 </Card>
@@ -173,11 +323,7 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => {
-                                                setAddFieldResource(resource.id);
-                                                setNewFieldName("");
-                                                setNewFieldType("string");
-                                            }}
+                                            onClick={() => openAddFieldDialog(resource.id)}
                                         >
                                             <Plus className="mr-1 h-3.5 w-3.5" />
                                             Add Field
@@ -186,7 +332,7 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8"
-                                            onClick={() => handleDeleteResource(resource.id)}
+                                            onClick={() => handleDeleteResource(resource.id, resource.name)}
                                         >
                                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                         </Button>
@@ -213,7 +359,7 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-7 w-7"
-                                                    onClick={() => handleDeleteField(field.id)}
+                                                    onClick={() => handleDeleteField(resource.id, field.id, field.name)}
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                                 </Button>
@@ -227,39 +373,41 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                 </div>
             )}
 
-            <Dialog open={!!addFieldResource} onOpenChange={(open) => !open && setAddFieldResource(null)}>
+            <Dialog open={addFieldOpen} onOpenChange={setAddFieldOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Add Field</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleAddField} className="space-y-4">
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            if (!addFieldResourceId) return;
+                            handleAddField(addFieldResourceId, addFieldName, addFieldType);
+                        }}
+                        className="space-y-4"
+                    >
                         <div className="space-y-2">
                             <Label>Field Name</Label>
                             <Input
-                                value={newFieldName}
-                                onChange={(event) => setNewFieldName(event.target.value)}
+                                value={addFieldName}
+                                onChange={(event) => setAddFieldName(event.target.value)}
                                 placeholder="email"
-                                required
                                 className="font-mono"
+                                required
                             />
                         </div>
                         <div className="space-y-2">
                             <Label>Data Type</Label>
-                            <Select
-                                value={newFieldType}
-                                onValueChange={(value) => setNewFieldType(value as FieldType)}
-                            >
+                            <Select value={addFieldType} onValueChange={(value) => setAddFieldType(value as FieldType)}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="string">string</SelectItem>
-                                    <SelectItem value="number">number</SelectItem>
-                                    <SelectItem value="double">double</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button type="submit" className="w-full">
+                        <Button type="submit" className="w-full" disabled={!addFieldResourceId}>
                             Add Field
                         </Button>
                     </form>
