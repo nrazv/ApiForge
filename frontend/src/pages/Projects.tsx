@@ -324,7 +324,17 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
   };
 
   const openApis = (projectId: string) => {
-    navigate(`/api-forge?project=${projectId}`);
+    const project = projects.find((item) => item.id === projectId);
+    if (project) {
+      const raw = localStorage.getItem("activeProjects");
+      const parsed = raw ? (JSON.parse(raw) as { id: string; name: string }[]) : [];
+      const next = Array.isArray(parsed) ? parsed.filter((item) => item?.id && item?.name) : [];
+      if (!next.some((item) => item.id === project.id)) {
+        next.push({ id: project.id, name: project.name });
+      }
+      localStorage.setItem("activeProjects", JSON.stringify(next));
+    }
+    navigate(`/api-forge/${projectId}`);
   };
 
   const canEditProject = (project: Project) => {

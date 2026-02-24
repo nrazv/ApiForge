@@ -1,23 +1,67 @@
-import { ReactNode } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { ReactNode, useEffect, useState, MouseEvent } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { FolderSymlink, FolderKanban, Zap, LogOut, User } from "lucide-react";
+import { FolderSymlink, FolderKanban, Zap, LogOut, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface ActiveProject {
+  id: string;
+  name: string;
+}
+
+const activeProjectsKey = "activeProjects";
 
 const navItems = [
   { to: "/projects/owned", icon: FolderKanban, label: "My Projects" },
   { to: "/projects/member", icon: FolderSymlink, label: "Member Projects" },
-  { to: "/api-forge", icon: Zap, label: "API Forge" },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(activeProjectsKey);
+    if (!raw) {
+      setActiveProjects([]);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as ActiveProject[];
+      const valid = Array.isArray(parsed)
+        ? parsed.filter((item) => item?.id && item?.name)
+        : [];
+      setActiveProjects(valid);
+      return;
+    } catch {
+      console.error("Failed to parse active projects from localStorage");
+    }
+
+    setActiveProjects([]);
+  }, [location.pathname]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const handleCloseProject = (event: MouseEvent<HTMLButtonElement>, projectId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const updated = activeProjects.filter((item) => item.id !== projectId);
+    if (updated.length === 0) {
+      localStorage.removeItem(activeProjectsKey);
+    } else {
+      localStorage.setItem(activeProjectsKey, JSON.stringify(updated));
+    }
+    setActiveProjects(updated);
+    if (location.pathname === `/api-forge/${projectId}`) {
+      navigate("/projects/owned");
+    }
   };
 
   return (
@@ -47,6 +91,33 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             >
               <item.icon className="h-4 w-4" />
               {item.label}
+            </NavLink>
+          ))}
+
+          {activeProjects.map((project) => (
+            <NavLink
+              key={project.id}
+              to={`/api-forge/${project.id}`}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                )
+              }
+            >
+              <Zap className="h-4 w-4" />
+              <span className="flex-1 truncate">{project.name}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={(event) => handleCloseProject(event, project.id)}
+                title="Close project"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
             </NavLink>
           ))}
 

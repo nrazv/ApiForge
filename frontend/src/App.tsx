@@ -57,7 +57,8 @@ function AppRoutes() {
         <Route path="/projects" element={<Navigate to="/projects/owned" replace />} />
         <Route path="/projects/owned" element={<Projects view="owned" />} />
         <Route path="/projects/member" element={<Projects view="member" />} />
-        <Route path="/api-forge" element={<ApiForge />} />
+        <Route path="/api-forge" element={<Navigate to="/projects/owned" replace />} />
+        <Route path="/api-forge/:projectId" element={<ApiForge />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
