@@ -282,7 +282,7 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                                     <Input
                                         value={newResourceName}
                                         onChange={(event) => setNewResourceName(event.target.value)}
-                                        placeholder="users"
+                                        placeholder="resource_name"
                                         required
                                         className="font-mono"
                                     />
@@ -391,7 +391,7 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                             <Input
                                 value={addFieldName}
                                 onChange={(event) => setAddFieldName(event.target.value)}
-                                placeholder="email"
+                                placeholder="field_name"
                                 className="font-mono"
                                 required
                             />
