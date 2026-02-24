@@ -54,6 +54,12 @@ public class ApplicationDBContext : IdentityDbContext<AppUser>
             .HasForeignKey(f => f.ModelId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Entity<ModelDefinitionEntity>()
+            .HasOne(m => m.Project)
+            .WithMany()
+            .HasForeignKey(m => m.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Entity<ModelRecordEntity>()
             .HasMany(r => r.Values)
             .WithOne(v => v.Record)

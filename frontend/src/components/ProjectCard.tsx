@@ -40,9 +40,9 @@ export default function ProjectCard({
                     <div className="flex items-center gap-2">
                         {onLeave && (
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
-                                className="border-rose-800/40 text-rose-900 hover:border-rose-800 hover:text-rose-900"
+                                className="opacity-0 transition-opacity group-hover:opacity-100"
                                 onClick={onLeave}
                             >
                                 <LogOut className="mr-1.5 h-3.5 w-3.5" />
@@ -91,7 +91,7 @@ export default function ProjectCard({
                         onClick={onApis}
                     >
                         <Zap className="mr-1.5 h-3.5 w-3.5" />
-                        APIs
+                        API Forge
                     </Button>
                 </div>
             </CardContent>
