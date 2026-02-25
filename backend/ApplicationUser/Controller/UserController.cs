@@ -142,6 +142,29 @@ public class UserController : ControllerBase
     }
 
 
+    [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        string? id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (id is null)
+        {
+            return Unauthorized();
+        }
+
+        var res = await _userService.ChangePasswordAsync(id, dto);
+        if (!res.IsSuccess)
+        {
+            return StatusCode(res.Error?.Status ?? StatusCodes.Status400BadRequest, res.Error);
+        }
+
+        return Ok(new { Message = "Password updated" });
+    }
+
+
     [HttpPatch()]
     [Authorize]
     [ProducesResponseType(typeof(AppUserDto), StatusCodes.Status200OK)]

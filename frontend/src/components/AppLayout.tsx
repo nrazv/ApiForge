@@ -124,7 +124,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="border-t border-sidebar-border p-3">
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors",
+                isActive ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/50"
+              )
+            }
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
               <User className="h-4 w-4" />
             </div>
@@ -133,7 +141,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 {profile?.username || "—"}
               </p>
             </div>
-          </div>
+          </NavLink>
           <Button
             variant="ghost"
             className="mt-1 w-full justify-start gap-3 text-muted-foreground"

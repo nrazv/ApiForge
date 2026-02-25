@@ -10,6 +10,7 @@ import Register from "@/pages/Register";
 import ChangePassword from "@/pages/ChangePassword";
 import Projects from "@/pages/Projects";
 import ApiForge from "@/pages/ApiForge";
+import Profile from "@/pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ function AppRoutes() {
         <Route path="/projects" element={<Navigate to="/projects/owned" replace />} />
         <Route path="/projects/owned" element={<Projects view="owned" />} />
         <Route path="/projects/member" element={<Projects view="member" />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/api-forge" element={<Navigate to="/projects/owned" replace />} />
         <Route path="/api-forge/:projectId" element={<ApiForge />} />
         <Route path="*" element={<NotFound />} />

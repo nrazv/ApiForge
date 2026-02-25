@@ -111,7 +111,8 @@ internal class UserService : IUserService
             return OperationResult<AuthenticatedUser>.Failure(new OperationError(Message: "Account is blocked", Status: 403));
         }
 
-        var result = await _signInManager.PasswordSignInAsync(dto.Email, dto.Password, isPersistent: false, lockoutOnFailure: true);
+        var loginName = user.UserName ?? user.Email ?? dto.Email;
+        var result = await _signInManager.PasswordSignInAsync(loginName, dto.Password, isPersistent: false, lockoutOnFailure: true);
         if (result.Succeeded is false)
         {
             if (result.IsLockedOut)
@@ -215,6 +216,30 @@ internal class UserService : IUserService
             .ToListAsync();
 
         return OperationResult<IEnumerable<UserSearchDto>>.Success(users);
+    }
+
+    public async Task<OperationResult<bool>> ChangePasswordAsync(string userId, ChangePasswordDto dto)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return OperationResult<bool>.Failure(new OperationError(Message: "Unauthorized", Status: 401));
+        }
+
+        var result = await userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+        if (!result.Succeeded)
+        {
+            var error = result.Errors.FirstOrDefault()?.Description ?? "Password change failed";
+            return OperationResult<bool>.Failure(new OperationError(Message: error, Status: 400));
+        }
+
+        if (user.MustChangePassword)
+        {
+            user.MustChangePassword = false;
+            await userManager.UpdateAsync(user);
+        }
+
+        return OperationResult<bool>.Success(true);
     }
 
     private static AppUserDto MapToDto(AppUser user)

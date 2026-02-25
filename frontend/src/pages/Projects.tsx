@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FolderKanban } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -604,6 +605,8 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
     setConfirmAction(() => action);
     setConfirmOpen(true);
   };
+  const tabTriggerClass =
+    "rounded-b-none text-xs border border-border bg-muted/10 px-5 py-2 font-semibold text-muted-foreground shadow-sm data-[state=active]:bg-white data-[state=active]:text-foreground";
 
   return (
     <div className="p-8">
@@ -625,11 +628,21 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
 
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
-        ) : (
-          <>
-            {view === "member" && invitations.length > 0 && (
-              <div className="mb-6 space-y-3">
-                <h2 className="text-lg font-semibold">Invitations</h2>
+        ) : view === "member" ? (
+          <Tabs defaultValue="projects">
+            <TabsList className="rounded-none inline-flex gap-2 border-b border-border bg-transparent p-0">
+              <TabsTrigger value="projects" className={tabTriggerClass}>
+                Member Projects
+              </TabsTrigger>
+              <TabsTrigger value="invitations" className={tabTriggerClass}>
+                Invitations
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="invitations" className="mt-4">
+              {invitations.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No invitations right now.</p>
+              ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {invitations.map((invite) => (
                     <Card key={invite.id} className="group h-full transition-colors hover:border-primary/30">
@@ -648,82 +661,80 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
                     </Card>
                   ))}
                 </div>
-              </div>
-            )}
-            {projects.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <FolderKanban className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                  <p className="text-muted-foreground">No projects yet. Create one to get started.</p>
-                </CardContent>
-              </Card>
-            ) : view === "member" ? (
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold">Member Projects</h2>
-                {visibleMembers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">You are not a member of any projects yet.</p>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {visibleMembers.map((project) => (
-                      <ProjectCard
-                        key={project.id}
-                        project={project}
-                        canEdit={canEditProject(project)}
-                        onEdit={() => openEditProject(project)}
-                        onDelete={() =>
-                          openConfirm(
-                            `Delete project "${project.name}"?`,
-                            "This will permanently remove the project.",
-                            "Delete",
-                            () => handleDelete(project)
-                          )
-                        }
-                        onMembers={() => openMembersProject(project)}
-                        onApis={() => openApis(project.id)}
-                        onLeave={() =>
-                          openConfirm(
-                            `Leave project "${project.name}"?`,
-                            "You will lose access to this project.",
-                            "Leave",
-                            () => handleLeaveProject(project)
-                          )
-                        }
-                        ownerLabel={project.owner_username || project.owner_id}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="projects" className="mt-4">
+              {visibleMembers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">You are not a member of any projects yet.</p>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {visibleMembers.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      canEdit={canEditProject(project)}
+                      onEdit={() => openEditProject(project)}
+                      onDelete={() =>
+                        openConfirm(
+                          `Delete project "${project.name}"?`,
+                          "This will permanently remove the project.",
+                          "Delete",
+                          () => handleDelete(project)
+                        )
+                      }
+                      onMembers={() => openMembersProject(project)}
+                      onApis={() => openApis(project.id)}
+                      onLeave={() =>
+                        openConfirm(
+                          `Leave project "${project.name}"?`,
+                          "You will lose access to this project.",
+                          "Leave",
+                          () => handleLeaveProject(project)
+                        )
+                      }
+                      ownerLabel={project.owner_username || project.owner_id}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        ) : projects.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <FolderKanban className="mb-4 h-12 w-12 text-muted-foreground/50" />
+              <p className="text-muted-foreground">No projects yet. Create one to get started.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">My Projects</h2>
+            {visibleOwned.length === 0 ? (
+              <p className="text-sm text-muted-foreground">You do not own any projects yet.</p>
             ) : (
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold">My Projects</h2>
-                {visibleOwned.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">You do not own any projects yet.</p>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {visibleOwned.map((project) => (
-                      <ProjectCard
-                        key={project.id}
-                        project={project}
-                        canEdit={canEditProject(project)}
-                        onEdit={() => openEditProject(project)}
-                        onDelete={() =>
-                          openConfirm(
-                            `Delete project "${project.name}"?`,
-                            "This will permanently remove the project.",
-                            "Delete",
-                            () => handleDelete(project)
-                          )
-                        }
-                        onMembers={() => openMembersProject(project)}
-                        onApis={() => openApis(project.id)}
-                      />
-                    ))}
-                  </div>
-                )}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {visibleOwned.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    canEdit={canEditProject(project)}
+                    onEdit={() => openEditProject(project)}
+                    onDelete={() =>
+                      openConfirm(
+                        `Delete project "${project.name}"?`,
+                        "This will permanently remove the project.",
+                        "Delete",
+                        () => handleDelete(project)
+                      )
+                    }
+                    onMembers={() => openMembersProject(project)}
+                    onApis={() => openApis(project.id)}
+                  />
+                ))}
               </div>
             )}
-          </>
+          </div>
         )}
 
         <EditProjectDialog
