@@ -453,7 +453,17 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
         return;
       }
 
-      setInvitations((prev) => prev.filter((item) => item.id !== invitation.id));
+      setInvitations((prev) => {
+        const next = prev.filter((item) => item.id !== invitation.id);
+        window.dispatchEvent(
+          new CustomEvent("invitations:updated", {
+            detail: {
+              ids: next.map((item) => item.id),
+            },
+          })
+        );
+        return next;
+      });
       toast.success("Invitation accepted");
       const projectsResponse = await fetch(`${apiBase}/api/projects`, {
         credentials: "include",
@@ -484,7 +494,17 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
         return;
       }
 
-      setInvitations((prev) => prev.filter((item) => item.id !== invitation.id));
+      setInvitations((prev) => {
+        const next = prev.filter((item) => item.id !== invitation.id);
+        window.dispatchEvent(
+          new CustomEvent("invitations:updated", {
+            detail: {
+              ids: next.map((item) => item.id),
+            },
+          })
+        );
+        return next;
+      });
       toast.success("Invitation declined");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to decline invitation");
@@ -635,7 +655,14 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
                 Member Projects
               </TabsTrigger>
               <TabsTrigger value="invitations" className={tabTriggerClass}>
-                Invitations
+                <span className="flex items-center gap-2">
+                  Invitations
+                  {invitations.length > 0 && (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold leading-none text-primary-foreground">
+                      {invitations.length}
+                    </span>
+                  )}
+                </span>
               </TabsTrigger>
             </TabsList>
 
