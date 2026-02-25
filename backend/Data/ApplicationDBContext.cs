@@ -16,6 +16,7 @@ public class ApplicationDBContext : IdentityDbContext<AppUser>
 
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
+    public DbSet<ProjectInvitation> ProjectInvitations => Set<ProjectInvitation>();
     public DbSet<ModelDefinitionEntity> Models => Set<ModelDefinitionEntity>();
     public DbSet<FieldDefinitionEntity> Fields => Set<FieldDefinitionEntity>();
     public DbSet<ModelRecordEntity> Records => Set<ModelRecordEntity>();
@@ -41,6 +42,24 @@ public class ApplicationDBContext : IdentityDbContext<AppUser>
             .WithMany()
             .HasForeignKey(pm => pm.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ProjectInvitation>()
+            .HasOne(pi => pi.Project)
+            .WithMany(p => p.Invitations)
+            .HasForeignKey(pi => pi.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ProjectInvitation>()
+            .HasOne(pi => pi.InvitedUser)
+            .WithMany()
+            .HasForeignKey(pi => pi.InvitedUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ProjectInvitation>()
+            .HasOne(pi => pi.InvitedByUser)
+            .WithMany()
+            .HasForeignKey(pi => pi.InvitedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Project>()
             .HasOne(p => p.Owner)

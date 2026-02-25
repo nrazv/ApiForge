@@ -192,6 +192,31 @@ internal class UserService : IUserService
         return OperationResult<PublicUserProfileDto>.Success(dto);
     }
 
+    public async Task<OperationResult<IEnumerable<UserSearchDto>>> SearchUsersAsync(string query, int limit)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return OperationResult<IEnumerable<UserSearchDto>>.Success(Array.Empty<UserSearchDto>());
+        }
+
+        var term = query.Trim();
+        var take = limit <= 0 ? 8 : Math.Min(limit, 20);
+
+        var users = await userManager.Users
+            .AsNoTracking()
+            .Where(u => (u.Email ?? "").Contains(term) || (u.UserName ?? "").Contains(term))
+            .OrderBy(u => u.UserName)
+            .Take(take)
+            .Select(u => new UserSearchDto(
+                u.Id,
+                u.UserName ?? string.Empty,
+                u.Email ?? string.Empty
+            ))
+            .ToListAsync();
+
+        return OperationResult<IEnumerable<UserSearchDto>>.Success(users);
+    }
+
     private static AppUserDto MapToDto(AppUser user)
     {
         return new AppUserDto(

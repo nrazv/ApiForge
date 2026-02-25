@@ -12,4 +12,5 @@ public interface IUserService : IService<AppUserDto>
 
     Task<OperationResult<AppUserDto>> UpdateAsync(UserUpdateDto entity, string email);
     Task<OperationResult<PublicUserProfileDto>> GetPublicProfileAsync(string id);
+    Task<OperationResult<IEnumerable<UserSearchDto>>> SearchUsersAsync(string query, int limit);
 }

@@ -10,4 +10,5 @@ public class Project
     public AppUser? Owner { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public ICollection<ProjectMember> Members { get; set; } = new List<ProjectMember>();
+    public ICollection<ProjectInvitation> Invitations { get; set; } = new List<ProjectInvitation>();
 }
