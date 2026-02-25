@@ -10,6 +10,7 @@ import { TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Layers, Plus, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ConfirmDialog";
 interface ApiResource {
     id: string;
     name: string;
@@ -66,6 +67,11 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
     const [addFieldResourceId, setAddFieldResourceId] = useState<string | null>(null);
     const [addFieldName, setAddFieldName] = useState("");
     const [addFieldType, setAddFieldType] = useState<FieldType>("string");
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmTitle, setConfirmTitle] = useState("");
+    const [confirmDescription, setConfirmDescription] = useState("");
+    const [confirmLabel, setConfirmLabel] = useState("Confirm");
+    const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
     const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
 
     const parseErrorMessage = async (response: Response) => {
@@ -228,7 +234,6 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
 
     const handleDeleteResource = async (resourceId: string, resourceName: string) => {
         if (!projectId) return;
-        if (!confirm(`Delete /${resourceName}? This cannot be undone.`)) return;
 
         try {
             const response = await fetch(`${apiBase}/api/projects/${projectId}/definitions/${resourceId}`, {
@@ -255,7 +260,6 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
 
     const handleDeleteField = async (resourceId: string, fieldId: string, fieldName: string) => {
         if (!projectId) return;
-        if (!confirm(`Delete field ${fieldName}? This cannot be undone.`)) return;
 
         try {
             const response = await fetch(
@@ -352,7 +356,13 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8"
-                                            onClick={() => handleDeleteResource(resource.id, resource.name)}
+                                            onClick={() => {
+                                                setConfirmTitle(`Delete /${resource.name}?`);
+                                                setConfirmDescription("This will permanently remove the resource.");
+                                                setConfirmLabel("Delete");
+                                                setConfirmAction(() => () => handleDeleteResource(resource.id, resource.name));
+                                                setConfirmOpen(true);
+                                            }}
                                         >
                                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                         </Button>
@@ -379,7 +389,13 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-7 w-7"
-                                                    onClick={() => handleDeleteField(resource.id, field.id, field.name)}
+                                                    onClick={() => {
+                                                        setConfirmTitle(`Delete field ${field.name}?`);
+                                                        setConfirmDescription("This will permanently remove the field.");
+                                                        setConfirmLabel("Delete");
+                                                        setConfirmAction(() => () => handleDeleteField(resource.id, field.id, field.name));
+                                                        setConfirmOpen(true);
+                                                    }}
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                                 </Button>
@@ -433,6 +449,18 @@ export default function ResourcesTab({ projectId }: ResourcesTabProps) {
                     </form>
                 </DialogContent>
             </Dialog>
+            <ConfirmDialog
+                open={confirmOpen}
+                title={confirmTitle}
+                description={confirmDescription}
+                confirmLabel={confirmLabel}
+                confirmClassName="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onConfirm={() => {
+                    confirmAction?.();
+                    setConfirmOpen(false);
+                }}
+                onOpenChange={setConfirmOpen}
+            />
         </TabsContent>
     );
 }

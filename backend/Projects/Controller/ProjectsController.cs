@@ -119,8 +119,29 @@ public class ProjectsController : ControllerBase
         return Ok(response.Data);
     }
 
-    [HttpPost("{projectId:guid}/members")]
-    public async Task<ActionResult<ProjectMemberDto>> AddMember(Guid projectId, [FromBody] AddProjectMemberDto dto)
+    [HttpDelete("{projectId:guid}/members/{memberId}")]
+    public async Task<IActionResult> RemoveMember(Guid projectId, string memberId)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var response = await _projectService.RemoveMemberAsync(userId, projectId, memberId);
+        if (!response.IsSuccess)
+        {
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost("{projectId:guid}/invitations")]
+    public async Task<ActionResult<ProjectInvitationDto>> CreateInvitation(
+        Guid projectId,
+        [FromBody] ProjectInvitationCreateDto dto
+    )
     {
         var userId = GetUserId();
         if (userId is null)
@@ -133,7 +154,7 @@ public class ProjectsController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var response = await _projectService.AddMemberAsync(userId, projectId, dto);
+        var response = await _projectService.CreateInvitationAsync(userId, projectId, dto);
         if (!response.IsSuccess)
         {
             return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
@@ -142,8 +163,8 @@ public class ProjectsController : ControllerBase
         return Ok(response.Data);
     }
 
-    [HttpDelete("{projectId:guid}/members/{memberId}")]
-    public async Task<IActionResult> RemoveMember(Guid projectId, string memberId)
+    [HttpGet("{projectId:guid}/invitations")]
+    public async Task<ActionResult<IEnumerable<ProjectInvitationDto>>> GetProjectInvitations(Guid projectId)
     {
         var userId = GetUserId();
         if (userId is null)
@@ -151,7 +172,79 @@ public class ProjectsController : ControllerBase
             return Unauthorized();
         }
 
-        var response = await _projectService.RemoveMemberAsync(userId, projectId, memberId);
+        var response = await _projectService.GetProjectInvitationsAsync(userId, projectId);
+        if (!response.IsSuccess)
+        {
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
+        }
+
+        return Ok(response.Data);
+    }
+
+    [HttpDelete("{projectId:guid}/invitations/{invitationId:guid}")]
+    public async Task<IActionResult> CancelInvitation(Guid projectId, Guid invitationId)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var response = await _projectService.CancelInvitationAsync(userId, projectId, invitationId);
+        if (!response.IsSuccess)
+        {
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
+        }
+
+        return NoContent();
+    }
+
+    [HttpGet("invitations")]
+    public async Task<ActionResult<IEnumerable<ProjectInvitationDto>>> GetMyInvitations()
+    {
+        var userId = GetUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var response = await _projectService.GetMyInvitationsAsync(userId);
+        if (!response.IsSuccess)
+        {
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
+        }
+
+        return Ok(response.Data);
+    }
+
+    [HttpPost("invitations/{invitationId:guid}/accept")]
+    public async Task<IActionResult> AcceptInvitation(Guid invitationId)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var response = await _projectService.AcceptInvitationAsync(userId, invitationId);
+        if (!response.IsSuccess)
+        {
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost("invitations/{invitationId:guid}/decline")]
+    public async Task<IActionResult> DeclineInvitation(Guid invitationId)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var response = await _projectService.DeclineInvitationAsync(userId, invitationId);
         if (!response.IsSuccess)
         {
             return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);

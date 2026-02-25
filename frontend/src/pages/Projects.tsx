@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FolderKanban } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +11,7 @@ import EditProjectDialog from "@/components/EditProjectDialog";
 import ProjectMembersDialog from "@/components/ProjectMembersDialog";
 import CreateProjectDialog from "@/components/CreateProjectDialog";
 import ProjectCard from "@/components/ProjectCard";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export type ProjectsView = "all" | "owned" | "member";
 
@@ -28,6 +30,21 @@ interface Member {
   email: string;
 }
 
+interface Invitation {
+  id: string;
+  project_id: string;
+  project_name: string;
+  email: string;
+  invited_by: string;
+  created_at: string;
+}
+
+interface UserSuggestion {
+  id: string;
+  username: string;
+  email: string;
+}
+
 export default function Projects({ view = "all" }: { view?: ProjectsView }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -39,7 +56,17 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
   const [editName, setEditName] = useState("");
   const [membersProject, setMembersProject] = useState<Project | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [projectInvitations, setProjectInvitations] = useState<Invitation[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [inviteSuggestions, setInviteSuggestions] = useState<UserSuggestion[]>([]);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteSearchPaused, setInviteSearchPaused] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmDescription, setConfirmDescription] = useState("");
+  const [confirmLabel, setConfirmLabel] = useState("Confirm");
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
 
   const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -90,6 +117,41 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
     email: data.Email ?? data.email ?? "",
   });
 
+  const mapInvitation = (data: {
+    Id?: string;
+    ProjectId?: string;
+    ProjectName?: string;
+    Email?: string;
+    InvitedByUsername?: string;
+    CreatedAt?: string;
+    id?: string;
+    projectId?: string;
+    projectName?: string;
+    email?: string;
+    invitedByUsername?: string;
+    createdAt?: string;
+  }): Invitation => ({
+    id: data.Id ?? data.id ?? "",
+    project_id: data.ProjectId ?? data.projectId ?? "",
+    project_name: data.ProjectName ?? data.projectName ?? "",
+    email: data.Email ?? data.email ?? "",
+    invited_by: data.InvitedByUsername ?? data.invitedByUsername ?? "",
+    created_at: data.CreatedAt ?? data.createdAt ?? "",
+  });
+
+  const mapUserSuggestion = (data: {
+    Id?: string;
+    Username?: string;
+    Email?: string;
+    id?: string;
+    username?: string;
+    email?: string;
+  }): UserSuggestion => ({
+    id: data.Id ?? data.id ?? "",
+    username: data.Username ?? data.username ?? "",
+    email: data.Email ?? data.email ?? "",
+  });
+
   useEffect(() => {
     const fetchProjects = async () => {
       setLoading(true);
@@ -116,6 +178,76 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
 
     fetchProjects();
   }, [apiBase]);
+
+  useEffect(() => {
+    const fetchInvitations = async () => {
+      if (!user) {
+        setInvitations([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${apiBase}/api/projects/invitations`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          toast.error(await parseErrorMessage(response));
+          setInvitations([]);
+          return;
+        }
+
+        const data = await response.json();
+        setInvitations((data ?? []).map(mapInvitation));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to load invitations");
+        setInvitations([]);
+      }
+    };
+
+    fetchInvitations();
+  }, [apiBase, user]);
+
+  useEffect(() => {
+    const query = inviteEmail.trim();
+    if (inviteSearchPaused || !membersProject || !canManageMembers || query.length < 2) {
+      setInviteSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
+      setInviteLoading(true);
+      try {
+        const response = await fetch(
+          `${apiBase}/api/user/search?query=${encodeURIComponent(query)}&limit=6`,
+          {
+            credentials: "include",
+            signal: controller.signal,
+          }
+        );
+
+        if (!response.ok) {
+          setInviteSuggestions([]);
+          return;
+        }
+
+        const data = await response.json();
+        setInviteSuggestions((data ?? []).map(mapUserSuggestion));
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          setInviteSuggestions([]);
+        }
+      } finally {
+        setInviteLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [apiBase, inviteEmail, membersProject, inviteSearchPaused]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,7 +304,6 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
   };
 
   const handleDelete = async (project: Project) => {
-    if (!confirm(`Delete project "${project.name}"?`)) return;
     try {
       const response = await fetch(`${apiBase}/api/projects/${project.id}`, {
         method: "DELETE",
@@ -203,9 +334,38 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
       }
 
       const data = await response.json();
-      setMembers((data ?? []).map(mapMember));
+      const mapped = (data ?? []).map(mapMember);
+      const currentUserId = user?.id;
+      if (currentUserId) {
+        mapped.sort((a, b) => {
+          if (a.user_id === currentUserId && b.user_id !== currentUserId) return -1;
+          if (a.user_id !== currentUserId && b.user_id === currentUserId) return 1;
+          return a.username.localeCompare(b.username);
+        });
+      }
+      setMembers(mapped);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load members");
+    }
+  };
+
+  const fetchProjectInvitations = async (projectId: string) => {
+    try {
+      const response = await fetch(`${apiBase}/api/projects/${projectId}/invitations`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        toast.error(await parseErrorMessage(response));
+        setProjectInvitations([]);
+        return;
+      }
+
+      const data = await response.json();
+      setProjectInvitations((data ?? []).map(mapInvitation));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load invitations");
+      setProjectInvitations([]);
     }
   };
 
@@ -217,7 +377,7 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
       return;
     }
     try {
-      const response = await fetch(`${apiBase}/api/projects/${membersProject.id}/members`, {
+      const response = await fetch(`${apiBase}/api/projects/${membersProject.id}/invitations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -230,12 +390,103 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
       }
 
       const data = await response.json();
-      const member = mapMember(data);
-      setMembers((prev) => [...prev, member]);
-      toast.success("User invited");
+      const invitation = mapInvitation(data);
+      setProjectInvitations((prev) => [invitation, ...prev]);
+      toast.success("Invitation sent");
       setInviteEmail("");
+      setInviteSuggestions([]);
+      setInviteSearchPaused(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to add member");
+      toast.error(error instanceof Error ? error.message : "Failed to send invitation");
+    }
+  };
+
+  const handleInviteEmailChange = (value: string) => {
+    setInviteSearchPaused(false);
+    setInviteEmail(value);
+  };
+
+  const handleSelectSuggestion = (suggestion: UserSuggestion) => {
+    setInviteSearchPaused(true);
+    setInviteEmail(suggestion.email);
+    setInviteSuggestions([]);
+    setInviteLoading(false);
+  };
+
+  const handleCancelInvitation = async (invitation: Invitation) => {
+    if (!membersProject) return;
+    try {
+      const response = await fetch(
+        `${apiBase}/api/projects/${membersProject.id}/invitations/${invitation.id}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        toast.error(await parseErrorMessage(response));
+        return;
+      }
+
+      setProjectInvitations((prev) => prev.filter((item) => item.id !== invitation.id));
+      toast.success("Invitation removed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove invitation");
+    }
+  };
+
+  const handleAcceptInvitation = async (invitation: Invitation) => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${apiBase}/api/projects/invitations/${invitation.id}/accept`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        toast.error(await parseErrorMessage(response));
+        return;
+      }
+
+      setInvitations((prev) => prev.filter((item) => item.id !== invitation.id));
+      toast.success("Invitation accepted");
+      const projectsResponse = await fetch(`${apiBase}/api/projects`, {
+        credentials: "include",
+      });
+      if (projectsResponse.ok) {
+        const data = await projectsResponse.json();
+        setProjects((data ?? []).map(mapProject));
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to accept invitation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeclineInvitation = async (invitation: Invitation) => {
+    try {
+      const response = await fetch(
+        `${apiBase}/api/projects/invitations/${invitation.id}/decline`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        toast.error(await parseErrorMessage(response));
+        return;
+      }
+
+      setInvitations((prev) => prev.filter((item) => item.id !== invitation.id));
+      toast.success("Invitation declined");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to decline invitation");
     }
   };
 
@@ -272,7 +523,6 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
 
   const handleLeaveProject = async (project: Project) => {
     if (!user) return;
-    if (!confirm(`Leave project "${project.name}"?`)) return;
     try {
       const response = await fetch(
         `${apiBase}/api/projects/${project.id}/members/${user.id}`,
@@ -317,10 +567,16 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
   const openMembersProject = (project: Project) => {
     setMembersProject(project);
     fetchMembers(project.id);
+    if (user?.id === project.owner_id) {
+      fetchProjectInvitations(project.id);
+    } else {
+      setProjectInvitations([]);
+    }
   };
 
   const closeMembersProject = () => {
     setMembersProject(null);
+    setProjectInvitations([]);
   };
 
   const openApis = (projectId: string) => {
@@ -339,6 +595,14 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
 
   const canEditProject = (project: Project) => {
     return view !== "member" && user?.id === project.owner_id;
+  };
+
+  const openConfirm = (title: string, description: string, label: string, action: () => void) => {
+    setConfirmTitle(title);
+    setConfirmDescription(description);
+    setConfirmLabel(label);
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
   };
 
   return (
@@ -361,57 +625,105 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
 
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
-        ) : projects.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <FolderKanban className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-muted-foreground">No projects yet. Create one to get started.</p>
-            </CardContent>
-          </Card>
-        ) : view === "member" ? (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Member Projects</h2>
-            {visibleMembers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">You are not a member of any projects yet.</p>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {visibleMembers.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    canEdit={canEditProject(project)}
-                    onEdit={() => openEditProject(project)}
-                    onDelete={() => handleDelete(project)}
-                    onMembers={() => openMembersProject(project)}
-                    onApis={() => openApis(project.id)}
-                    onLeave={() => handleLeaveProject(project)}
-                    ownerLabel={project.owner_username || project.owner_id}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
         ) : (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">My Projects</h2>
-            {visibleOwned.length === 0 ? (
-              <p className="text-sm text-muted-foreground">You do not own any projects yet.</p>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {visibleOwned.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    canEdit={canEditProject(project)}
-                    onEdit={() => openEditProject(project)}
-                    onDelete={() => handleDelete(project)}
-                    onMembers={() => openMembersProject(project)}
-                    onApis={() => openApis(project.id)}
-                  />
-                ))}
+          <>
+            {view === "member" && invitations.length > 0 && (
+              <div className="mb-6 space-y-3">
+                <h2 className="text-lg font-semibold">Invitations</h2>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {invitations.map((invite) => (
+                    <Card key={invite.id} className="group h-full transition-colors hover:border-primary/30">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">{invite.project_name}</CardTitle>
+                        <CardDescription>
+                          Invited by {invite.invited_by || "Project owner"}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="mt-auto flex gap-2">
+                        <Button variant="outline" onClick={() => handleDeclineInvitation(invite)}>
+                          Decline
+                        </Button>
+                        <Button onClick={() => handleAcceptInvitation(invite)}>Accept</Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
+            {projects.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FolderKanban className="mb-4 h-12 w-12 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">No projects yet. Create one to get started.</p>
+                </CardContent>
+              </Card>
+            ) : view === "member" ? (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">Member Projects</h2>
+                {visibleMembers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">You are not a member of any projects yet.</p>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {visibleMembers.map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        canEdit={canEditProject(project)}
+                        onEdit={() => openEditProject(project)}
+                        onDelete={() =>
+                          openConfirm(
+                            `Delete project "${project.name}"?`,
+                            "This will permanently remove the project.",
+                            "Delete",
+                            () => handleDelete(project)
+                          )
+                        }
+                        onMembers={() => openMembersProject(project)}
+                        onApis={() => openApis(project.id)}
+                        onLeave={() =>
+                          openConfirm(
+                            `Leave project "${project.name}"?`,
+                            "You will lose access to this project.",
+                            "Leave",
+                            () => handleLeaveProject(project)
+                          )
+                        }
+                        ownerLabel={project.owner_username || project.owner_id}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">My Projects</h2>
+                {visibleOwned.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">You do not own any projects yet.</p>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {visibleOwned.map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        canEdit={canEditProject(project)}
+                        onEdit={() => openEditProject(project)}
+                        onDelete={() =>
+                          openConfirm(
+                            `Delete project "${project.name}"?`,
+                            "This will permanently remove the project.",
+                            "Delete",
+                            () => handleDelete(project)
+                          )
+                        }
+                        onMembers={() => openMembersProject(project)}
+                        onApis={() => openApis(project.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         <EditProjectDialog
@@ -426,13 +738,30 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
           open={!!membersProject}
           projectName={membersProject?.name}
           members={members}
+          invitations={projectInvitations}
           inviteEmail={inviteEmail}
+          inviteSuggestions={inviteSuggestions}
+          inviteLoading={inviteLoading}
           canManageMembers={canManageMembers}
           currentUserId={user?.id}
-          onInviteEmailChange={setInviteEmail}
+          onInviteEmailChange={handleInviteEmailChange}
           onInvite={handleInvite}
+          onSelectSuggestion={handleSelectSuggestion}
+          onCancelInvitation={handleCancelInvitation}
           onRemoveMember={handleRemoveMember}
           onOpenChange={(open) => !open && closeMembersProject()}
+        />
+        <ConfirmDialog
+          open={confirmOpen}
+          title={confirmTitle}
+          description={confirmDescription}
+          confirmLabel={confirmLabel}
+          confirmClassName="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          onConfirm={() => {
+            confirmAction?.();
+            setConfirmOpen(false);
+          }}
+          onOpenChange={setConfirmOpen}
         />
       </motion.div>
     </div>

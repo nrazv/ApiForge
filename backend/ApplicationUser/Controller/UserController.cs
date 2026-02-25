@@ -112,6 +112,23 @@ public class UserController : ControllerBase
         return Ok();
     }
 
+    [HttpGet("search")]
+    [Authorize]
+    [ProducesResponseType(typeof(IEnumerable<UserSearchDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<UserSearchDto>>> SearchUsers(
+        [FromQuery] string query,
+        [FromQuery] int limit = 8
+    )
+    {
+        var response = await _userService.SearchUsersAsync(query, limit);
+        if (!response.IsSuccess)
+        {
+            return StatusCode(response.Error?.Status ?? StatusCodes.Status400BadRequest, response.Error);
+        }
+
+        return Ok(response.Data);
+    }
+
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {

@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Pencil, Trash2, KeyRound, Ban, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface ManagedUser {
   id: string;
@@ -35,6 +36,11 @@ export default function UserManagement() {
   const [editOpen, setEditOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmDescription, setConfirmDescription] = useState("");
+  const [confirmLabel, setConfirmLabel] = useState("Confirm");
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
 
   // Create form
   const [newEmail, setNewEmail] = useState("");
@@ -112,9 +118,16 @@ export default function UserManagement() {
   };
 
   const handleDelete = (user: ManagedUser) => {
-    if (!confirm(`Delete user "${user.username}"? This cannot be undone.`)) return;
     setUsers((prev) => prev.filter((u) => u.id !== user.id));
     toast.success("User deleted");
+  };
+
+  const openConfirm = (title: string, description: string, label: string, action: () => void) => {
+    setConfirmTitle(title);
+    setConfirmDescription(description);
+    setConfirmLabel(label);
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
   };
 
   return (
@@ -257,7 +270,19 @@ export default function UserManagement() {
                             <Ban className="h-4 w-4 text-destructive" />
                           )}
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(u)} title="Delete">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            openConfirm(
+                              `Delete user "${u.username}"?`,
+                              "This cannot be undone.",
+                              "Delete",
+                              () => handleDelete(u)
+                            )
+                          }
+                          title="Delete"
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -319,6 +344,18 @@ export default function UserManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        <ConfirmDialog
+          open={confirmOpen}
+          title={confirmTitle}
+          description={confirmDescription}
+          confirmLabel={confirmLabel}
+          confirmClassName="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          onConfirm={() => {
+            confirmAction?.();
+            setConfirmOpen(false);
+          }}
+          onOpenChange={setConfirmOpen}
+        />
       </motion.div>
     </div>
   );
