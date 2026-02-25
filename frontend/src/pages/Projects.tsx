@@ -11,6 +11,7 @@ import EditProjectDialog from "@/components/EditProjectDialog";
 import ProjectMembersDialog from "@/components/ProjectMembersDialog";
 import CreateProjectDialog from "@/components/CreateProjectDialog";
 import ProjectCard from "@/components/ProjectCard";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export type ProjectsView = "all" | "owned" | "member";
 
@@ -61,6 +62,11 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
   const [inviteSuggestions, setInviteSuggestions] = useState<UserSuggestion[]>([]);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteSearchPaused, setInviteSearchPaused] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmDescription, setConfirmDescription] = useState("");
+  const [confirmLabel, setConfirmLabel] = useState("Confirm");
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
 
   const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -298,7 +304,6 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
   };
 
   const handleDelete = async (project: Project) => {
-    if (!confirm(`Delete project "${project.name}"?`)) return;
     try {
       const response = await fetch(`${apiBase}/api/projects/${project.id}`, {
         method: "DELETE",
@@ -518,7 +523,6 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
 
   const handleLeaveProject = async (project: Project) => {
     if (!user) return;
-    if (!confirm(`Leave project "${project.name}"?`)) return;
     try {
       const response = await fetch(
         `${apiBase}/api/projects/${project.id}/members/${user.id}`,
@@ -593,6 +597,14 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
     return view !== "member" && user?.id === project.owner_id;
   };
 
+  const openConfirm = (title: string, description: string, label: string, action: () => void) => {
+    setConfirmTitle(title);
+    setConfirmDescription(description);
+    setConfirmLabel(label);
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
+  };
+
   return (
     <div className="p-8">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -658,10 +670,24 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
                         project={project}
                         canEdit={canEditProject(project)}
                         onEdit={() => openEditProject(project)}
-                        onDelete={() => handleDelete(project)}
+                        onDelete={() =>
+                          openConfirm(
+                            `Delete project "${project.name}"?`,
+                            "This will permanently remove the project.",
+                            "Delete",
+                            () => handleDelete(project)
+                          )
+                        }
                         onMembers={() => openMembersProject(project)}
                         onApis={() => openApis(project.id)}
-                        onLeave={() => handleLeaveProject(project)}
+                        onLeave={() =>
+                          openConfirm(
+                            `Leave project "${project.name}"?`,
+                            "You will lose access to this project.",
+                            "Leave",
+                            () => handleLeaveProject(project)
+                          )
+                        }
                         ownerLabel={project.owner_username || project.owner_id}
                       />
                     ))}
@@ -681,7 +707,14 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
                         project={project}
                         canEdit={canEditProject(project)}
                         onEdit={() => openEditProject(project)}
-                        onDelete={() => handleDelete(project)}
+                        onDelete={() =>
+                          openConfirm(
+                            `Delete project "${project.name}"?`,
+                            "This will permanently remove the project.",
+                            "Delete",
+                            () => handleDelete(project)
+                          )
+                        }
                         onMembers={() => openMembersProject(project)}
                         onApis={() => openApis(project.id)}
                       />
@@ -717,6 +750,18 @@ export default function Projects({ view = "all" }: { view?: ProjectsView }) {
           onCancelInvitation={handleCancelInvitation}
           onRemoveMember={handleRemoveMember}
           onOpenChange={(open) => !open && closeMembersProject()}
+        />
+        <ConfirmDialog
+          open={confirmOpen}
+          title={confirmTitle}
+          description={confirmDescription}
+          confirmLabel={confirmLabel}
+          confirmClassName="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          onConfirm={() => {
+            confirmAction?.();
+            setConfirmOpen(false);
+          }}
+          onOpenChange={setConfirmOpen}
         />
       </motion.div>
     </div>
