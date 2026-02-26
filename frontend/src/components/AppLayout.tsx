@@ -1,9 +1,10 @@
-import { ReactNode, useEffect, useState, MouseEvent } from "react";
+import { ReactNode, useEffect, useRef, useState, MouseEvent } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { FolderSymlink, FolderKanban, Zap, LogOut, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ActiveProject {
   id: string;
@@ -22,6 +23,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
+  const [inviteCount, setInviteCount] = useState(0);
+  const invitationIdsRef = useRef<Set<string>>(new Set());
+  const invitesReadyRef = useRef(false);
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
 
   useEffect(() => {
     const raw = localStorage.getItem(activeProjectsKey);
@@ -43,6 +48,75 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
     setActiveProjects([]);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!profile?.id) {
+      invitationIdsRef.current = new Set();
+      setInviteCount(0);
+      invitesReadyRef.current = false;
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchInvitations = async () => {
+      try {
+        const response = await fetch(`${apiBase}/api/projects/invitations`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { id?: string }[];
+        if (!isMounted) return;
+
+        const nextIds = new Set((data ?? []).map((item) => item?.id).filter(Boolean) as string[]);
+        setInviteCount(nextIds.size);
+        if (invitesReadyRef.current) {
+          const newInvites = Array.from(nextIds).filter((id) => !invitationIdsRef.current.has(id));
+          if (newInvites.length > 0) {
+            toast.success(`You have ${newInvites.length} new invitation${newInvites.length > 1 ? "s" : ""}.`);
+          }
+        }
+
+        invitationIdsRef.current = nextIds;
+        invitesReadyRef.current = true;
+      } catch {
+        console.error("Failed to fetch project invitations");
+      }
+    };
+
+    fetchInvitations();
+    const intervalId = setInterval(fetchInvitations, 30000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [apiBase, profile?.id]);
+
+  useEffect(() => {
+    const handleInvitationUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<{ ids?: string[]; count?: number }>).detail;
+      if (detail?.ids) {
+        const nextIds = new Set(detail.ids);
+        invitationIdsRef.current = nextIds;
+        setInviteCount(nextIds.size);
+        invitesReadyRef.current = true;
+        return;
+      }
+
+      if (typeof detail?.count === "number") {
+        setInviteCount(detail.count);
+        invitesReadyRef.current = true;
+      }
+    };
+
+    window.addEventListener("invitations:updated", handleInvitationUpdate);
+    return () => window.removeEventListener("invitations:updated", handleInvitationUpdate);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -90,7 +164,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               }
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1 truncate">{item.label}</span>
+              {item.to === "/projects/member" && inviteCount > 0 && (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold leading-none text-primary-foreground">
+                  {inviteCount}
+                </span>
+              )}
             </NavLink>
           ))}
 
@@ -124,7 +203,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="border-t border-sidebar-border p-3">
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors",
+                isActive ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/50"
+              )
+            }
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
               <User className="h-4 w-4" />
             </div>
@@ -133,7 +220,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 {profile?.username || "—"}
               </p>
             </div>
-          </div>
+          </NavLink>
           <Button
             variant="ghost"
             className="mt-1 w-full justify-start gap-3 text-muted-foreground"
