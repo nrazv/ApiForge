@@ -9,9 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
-    const { profile, refreshProfile } = useAuth();
+    const { profile, refreshProfile, signOut } = useAuth();
+    const navigate = useNavigate();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [savingProfile, setSavingProfile] = useState(false);
@@ -21,6 +24,8 @@ export default function Profile() {
     const [savingPassword, setSavingPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deletingAccount, setDeletingAccount] = useState(false);
     const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
     const tabTriggerClass =
         "rounded-b-none text-xs border border-border bg-muted/10 px-5 py-2 font-semibold text-muted-foreground shadow-sm data-[state=active]:bg-white data-[state=active]:text-foreground";
@@ -124,6 +129,28 @@ export default function Profile() {
         }
     };
 
+    const handleDeleteAccount = async () => {
+        setDeletingAccount(true);
+        try {
+            const response = await fetch(`${apiBase}/api/user/me`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            if (!response.ok) {
+                toast.error(await parseErrorMessage(response));
+                return;
+            }
+
+            toast.success("Account deleted");
+            await signOut();
+            navigate("/login", { replace: true });
+        } finally {
+            setDeletingAccount(false);
+            setDeleteOpen(false);
+        }
+    };
+
     if (!profile) {
         return (
             <div className="p-8">
@@ -147,6 +174,9 @@ export default function Profile() {
                         </TabsTrigger>
                         <TabsTrigger value="password" className={tabTriggerClass}>
                             Change Password
+                        </TabsTrigger>
+                        <TabsTrigger value="danger" className={tabTriggerClass}>
+                            Delete Account
                         </TabsTrigger>
                     </TabsList>
 
@@ -266,8 +296,41 @@ export default function Profile() {
                             </CardContent>
                         </Card>
                     </TabsContent>
+                    <TabsContent value="danger" className="mt-4">
+                        <Card className="h-full border-destructive/30">
+                            <CardHeader>
+                                <CardTitle>Delete Account</CardTitle>
+                                <CardDescription>
+                                    This will delete your owned projects and remove you from all member projects.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-sm text-destructive">This action cannot be undone.</p>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => setDeleteOpen(true)}
+                                        disabled={deletingAccount}
+                                    >
+                                        {deletingAccount ? "Deleting..." : "Delete Account"}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
                 </Tabs>
             </motion.div>
+            <ConfirmDialog
+                open={deleteOpen}
+                title="Delete your account?"
+                description="This will delete your owned projects and remove you from all member projects. This action cannot be undone."
+                confirmLabel="Delete"
+                confirmClassName="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onConfirm={handleDeleteAccount}
+                onOpenChange={setDeleteOpen}
+            />
         </div>
     );
 }

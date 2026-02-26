@@ -10,6 +10,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using backend.ApplicationUser.Models;
 using backend.ApplicationUser.Dtos;
+using backend.Data;
 
 namespace backend.ApplicationUser.Services;
 
@@ -19,13 +20,21 @@ internal class UserService : IUserService
     private readonly IConfiguration _config;
     private readonly SignInManager<AppUser> _signInManager;
     private readonly ILogger<IUserService> _logger;
+    private readonly ApplicationDBContext _dbContext;
 
-    public UserService(UserManager<AppUser> userManager, IConfiguration config, SignInManager<AppUser> signInManager, ILogger<IUserService> logger)
+    public UserService(
+        UserManager<AppUser> userManager,
+        IConfiguration config,
+        SignInManager<AppUser> signInManager,
+        ILogger<IUserService> logger,
+        ApplicationDBContext dbContext
+    )
     {
         _config = config;
         _logger = logger;
         _signInManager = signInManager;
         this.userManager = userManager;
+        _dbContext = dbContext;
     }
 
 
@@ -240,6 +249,68 @@ internal class UserService : IUserService
         }
 
         return OperationResult<bool>.Success(true);
+    }
+
+    public async Task<OperationResult<bool>> DeleteAccountAsync(string userId)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return OperationResult<bool>.Failure(new OperationError(Message: "Unauthorized", Status: 401));
+        }
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        try
+        {
+            var ownedProjects = await _dbContext.Projects
+                .Where(p => p.OwnerId == userId)
+                .ToListAsync();
+            if (ownedProjects.Count > 0)
+            {
+                _dbContext.Projects.RemoveRange(ownedProjects);
+            }
+
+            var memberEntries = await _dbContext.ProjectMembers
+                .Where(pm => pm.UserId == userId)
+                .ToListAsync();
+            if (memberEntries.Count > 0)
+            {
+                _dbContext.ProjectMembers.RemoveRange(memberEntries);
+            }
+
+            var invitations = await _dbContext.ProjectInvitations
+                .Where(pi =>
+                    pi.InvitedUserId == userId ||
+                    pi.InvitedByUserId == userId ||
+                    (user.Email != null && pi.Email == user.Email)
+                )
+                .ToListAsync();
+            if (invitations.Count > 0)
+            {
+                _dbContext.ProjectInvitations.RemoveRange(invitations);
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            user.IsBlocked = true;
+            var updateResult = await userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var error = updateResult.Errors.FirstOrDefault()?.Description ?? "Account deletion failed";
+                await transaction.RollbackAsync();
+                return OperationResult<bool>.Failure(new OperationError(Message: error, Status: 400));
+            }
+
+            await transaction.CommitAsync();
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete account for user {UserId}", userId);
+            await transaction.RollbackAsync();
+            return OperationResult<bool>.Failure(new OperationError(Message: "Account deletion failed", Status: 500));
+        }
     }
 
     private static AppUserDto MapToDto(AppUser user)

@@ -14,4 +14,5 @@ public interface IUserService : IService<AppUserDto>
     Task<OperationResult<PublicUserProfileDto>> GetPublicProfileAsync(string id);
     Task<OperationResult<IEnumerable<UserSearchDto>>> SearchUsersAsync(string query, int limit);
     Task<OperationResult<bool>> ChangePasswordAsync(string userId, ChangePasswordDto dto);
+    Task<OperationResult<bool>> DeleteAccountAsync(string userId);
 }

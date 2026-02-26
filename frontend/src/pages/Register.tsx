@@ -76,35 +76,42 @@ export default function Register() {
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="username">Username</Label>
+                                <Label htmlFor="email">Email</Label>
                                 <Input
-                                    id="username"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    placeholder="yourname"
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="you@example.com"
+                                    autoComplete="email"
                                     required
                                     className="font-mono"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="username">Username</Label>
                                 <Input
-                                    id="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="you@example.com"
+                                    id="username"
+                                    name="username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="username"
+                                    autoComplete="username"
                                     required
+                                    className="font-mono"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="password">Password</Label>
                                 <Input
                                     id="password"
+                                    name="password"
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
+                                    placeholder="••••••••••••••••"
+                                    autoComplete="new-password"
                                     required
                                 />
                             </div>
@@ -112,10 +119,12 @@ export default function Register() {
                                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                                 <Input
                                     id="confirmPassword"
+                                    name="confirmPassword"
                                     type="password"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="••••••••"
+                                    placeholder="••••••••••••••••"
+                                    autoComplete="new-password"
                                     required
                                 />
                             </div>
