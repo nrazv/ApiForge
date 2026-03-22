@@ -2,6 +2,8 @@
 
 using backend.Definition.Repository;
 using backend.Definition.Service;
+using backend.ModelRecord.Repository;
+using backend.ModelRecord.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
@@ -11,12 +13,14 @@ builder.Services.ConfigureConnectionStringForEnv(builder.Configuration, builder.
 
 
 // Register Services
-builder.Services.AddScoped<IDefinitionService, DefinitionService>();
+builder.Services.AddScoped<IModelDefinitionService, ModelDefinitionService>();
+builder.Services.AddScoped<IModelRecordService, ModelRecordService>();
 
 // Register Repositories
 builder.Services.AddScoped<IDefinitionRepository, DefinitionRepository>();
-builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IModelRecordRepository, ModelRecordRepository>();
 
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())

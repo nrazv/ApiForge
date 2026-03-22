@@ -1,15 +1,16 @@
 using backend.ApiResponse.OperationResults;
 using backend.Definition.Dto;
+using backend.Definition.Entities;
 using backend.Definition.Factory;
 using backend.Definition.Repository;
 
 namespace backend.Definition.Service;
 
-public class DefinitionService : IDefinitionService
+public class ModelDefinitionService : IModelDefinitionService
 {
     private readonly IDefinitionRepository repository;
 
-    public DefinitionService(IDefinitionRepository definitionRepository)
+    public ModelDefinitionService(IDefinitionRepository definitionRepository)
     {
         repository = definitionRepository;
     }
@@ -42,5 +43,10 @@ public class DefinitionService : IDefinitionService
             var response = DefinitionFactory.FromModelDefinitionEntity(model);
             return OperationResult<ModelDefinitionResponseDto>.Success(response);
         }
+    }
+
+    public async Task<ModelDefinitionEntity?> GetModelByNameAsync(string name)
+    {
+        return await repository.FindAsync(e => e.Name == name);
     }
 }

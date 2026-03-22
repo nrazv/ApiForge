@@ -2,7 +2,6 @@ using backend.Definition.Entities;
 
 namespace backend.ModelRecord.Entities;
 
-
 public class ModelRecordEntity
 {
     public required Guid Id { get; set; }

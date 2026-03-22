@@ -9,6 +9,9 @@ public class ApplicationDBContext : DbContext
 {
     public DbSet<ModelDefinitionEntity> Models => Set<ModelDefinitionEntity>();
     public DbSet<FieldDefinitionEntity> Fields => Set<FieldDefinitionEntity>();
+    public DbSet<ModelRecordEntity> Records => Set<ModelRecordEntity>();
+    public DbSet<FieldValueEntity> FieldValues => Set<FieldValueEntity>();
+
 
     public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options)
     {
@@ -16,6 +19,7 @@ public class ApplicationDBContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new ModelDefinitionEntityConfig());
+        modelBuilder.ApplyConfiguration(new ModelRecordEntityConfiguration());
         modelBuilder.Entity<ModelDefinitionEntity>()
             .HasMany(m => m.Fields)
             .WithOne(f => f.Model)

@@ -10,9 +10,9 @@ namespace backend.Definition.Controller;
 [Route("api/define-models")]
 public class DefinitionController : ControllerBase
 {
-    private readonly IDefinitionService service;
+    private readonly IModelDefinitionService service;
 
-    public DefinitionController(IDefinitionService definitionService)
+    public DefinitionController(IModelDefinitionService definitionService)
     {
         service = definitionService;
     }
