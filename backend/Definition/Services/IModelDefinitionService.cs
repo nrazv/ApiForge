@@ -4,7 +4,7 @@ using backend.Service;
 
 namespace backend.Definition.Service;
 
-public interface IModelDefinitionService : IService<ModelDefinitionCreateDto, ModelDefinitionResponseDto>
+public interface IModelDefinitionService : APIService<ModelDefinitionCreateDto, ModelDefinitionResponseDto>
 {
     public Task<ModelDefinitionEntity?> GetModelByNameAsync(string name);
 }

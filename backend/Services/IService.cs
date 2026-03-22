@@ -1,10 +1,11 @@
 using backend.ApiResponse.OperationResults;
-
 namespace backend.Service;
 
-public interface IService<TInput, TOutput>
+public interface IService<T>
 {
-    public Task<OperationResult<TOutput>> CreateAsync(TInput obj);
-    public Task<OperationResult<TOutput>> FindByNameAsync(string name);
-
+    Task<OperationResult<T>> CreateAsync(T entity);
+    Task<OperationResult<T>> GetByIdAsync(string id);
+    Task<OperationResult<T>> GetByName(string name);
+    Task<OperationResult<T>> UpdateAsync(T entity);
+    Task<OperationResult<bool>> DeleteByIdAsync(Guid id);
 }
