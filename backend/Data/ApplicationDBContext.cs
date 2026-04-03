@@ -10,10 +10,6 @@ namespace backend.Data;
 
 public class ApplicationDBContext : IdentityDbContext<AppUser>
 {
-    public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options)
-    {
-    }
-
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
     public DbSet<ProjectInvitation> ProjectInvitations => Set<ProjectInvitation>();
@@ -22,11 +18,20 @@ public class ApplicationDBContext : IdentityDbContext<AppUser>
     public DbSet<ModelRecordEntity> Records => Set<ModelRecordEntity>();
     public DbSet<FieldValueEntity> FieldValues => Set<FieldValueEntity>();
 
+
+    public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options)
+    {
+    }
+
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        base.OnModelCreating(builder);
 
+
+        base.OnModelCreating(builder);
+        builder.Entity<ModelDefinitionEntity>();
         builder.ApplyConfiguration(new ModelDefinitionEntityConfig());
+        builder.ApplyConfiguration(new ModelRecordEntityConfiguration());
 
         builder.Entity<ProjectMember>()
             .HasKey(pm => new { pm.ProjectId, pm.UserId });

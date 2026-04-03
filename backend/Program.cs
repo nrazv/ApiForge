@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Identity;
 
 using backend.Definition.Repository;
 using backend.Definition.Service;
+using backend.ModelRecord.Repository;
+using backend.ModelRecord.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,10 +14,19 @@ builder.Services.ConfigureConnectionStringForEnv(builder.Configuration, builder.
 
 
 // Register Services
-builder.Services.AddScoped<IDefinitionService, DefinitionService>();
+builder.Services.AddScoped<IModelDefinitionService, ModelDefinitionService>();
+builder.Services.AddScoped<IModelRecordService, ModelRecordService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
+
+
 
 // Register Repositories
 builder.Services.AddScoped<IDefinitionRepository, DefinitionRepository>();
+builder.Services.AddScoped<IModelRecordRepository, ModelRecordRepository>();
+
 builder.Services.AddSwaggerGen();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
@@ -25,9 +36,6 @@ builder.Services.AddAuthentication();
 // Configure Identity and JWT Authentication
 builder.Services.AddIdentityAndJwt(builder.Configuration);
 
-// Add services 
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IProjectService, ProjectService>();
 
 var app = builder.Build();
 

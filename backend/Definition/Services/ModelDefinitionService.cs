@@ -8,16 +8,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Definition.Service;
 
-public class DefinitionService : IDefinitionService
+public class ModelDefinitionService : IModelDefinitionService
 {
     private readonly IDefinitionRepository repository;
     private readonly ApplicationDBContext dbContext;
 
-    public DefinitionService(IDefinitionRepository definitionRepository, ApplicationDBContext applicationDbContext)
+
+    public ModelDefinitionService(IDefinitionRepository definitionRepository, ApplicationDBContext applicationDbContext)
     {
         repository = definitionRepository;
         dbContext = applicationDbContext;
     }
+
     [Obsolete("Use CreateAsync(Guid projectId, ModelDefinitionCreateDto dto) instead.")]
     public Task<OperationResult<ModelDefinitionResponseDto>> CreateAsync(ModelDefinitionCreateDto dto)
     {
@@ -56,6 +58,10 @@ public class DefinitionService : IDefinitionService
         }
     }
 
+    public async Task<ModelDefinitionEntity?> GetModelByNameAsync(string name)
+    {
+        return await repository.FindAsync(e => e.Name == name);
+    }
     public async Task<OperationResult<IEnumerable<ModelDefinitionResponseDto>>> ListByProjectAsync(Guid projectId)
     {
         var models = await repository.FindAllAsync(e => e.ProjectId == projectId);

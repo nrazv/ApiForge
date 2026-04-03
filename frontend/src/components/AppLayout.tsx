@@ -2,7 +2,14 @@ import { ReactNode, useEffect, useRef, useState, MouseEvent } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { FolderSymlink, FolderKanban, Zap, LogOut, User, X } from "lucide-react";
+import {
+  FolderSymlink,
+  FolderKanban,
+  Zap,
+  LogOut,
+  User,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -72,12 +79,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         const data = (await response.json()) as { id?: string }[];
         if (!isMounted) return;
 
-        const nextIds = new Set((data ?? []).map((item) => item?.id).filter(Boolean) as string[]);
+        const nextIds = new Set(
+          (data ?? []).map((item) => item?.id).filter(Boolean) as string[],
+        );
         setInviteCount(nextIds.size);
         if (invitesReadyRef.current) {
-          const newInvites = Array.from(nextIds).filter((id) => !invitationIdsRef.current.has(id));
+          const newInvites = Array.from(nextIds).filter(
+            (id) => !invitationIdsRef.current.has(id),
+          );
           if (newInvites.length > 0) {
-            toast.success(`You have ${newInvites.length} new invitation${newInvites.length > 1 ? "s" : ""}.`);
+            toast.success(
+              `You have ${newInvites.length} new invitation${newInvites.length > 1 ? "s" : ""}.`,
+            );
           }
         }
 
@@ -99,7 +112,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleInvitationUpdate = (event: Event) => {
-      const detail = (event as CustomEvent<{ ids?: string[]; count?: number }>).detail;
+      const detail = (event as CustomEvent<{ ids?: string[]; count?: number }>)
+        .detail;
       if (detail?.ids) {
         const nextIds = new Set(detail.ids);
         invitationIdsRef.current = nextIds;
@@ -115,7 +129,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     };
 
     window.addEventListener("invitations:updated", handleInvitationUpdate);
-    return () => window.removeEventListener("invitations:updated", handleInvitationUpdate);
+    return () =>
+      window.removeEventListener("invitations:updated", handleInvitationUpdate);
   }, []);
 
   const handleSignOut = async () => {
@@ -123,7 +138,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     navigate("/");
   };
 
-  const handleCloseProject = (event: MouseEvent<HTMLButtonElement>, projectId: string) => {
+  const handleCloseProject = (
+    event: MouseEvent<HTMLButtonElement>,
+    projectId: string,
+  ) => {
     event.preventDefault();
     event.stopPropagation();
     const updated = activeProjects.filter((item) => item.id !== projectId);
@@ -146,7 +164,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Zap className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="text-lg font-bold text-sidebar-foreground">API Forge</span>
+          <span className="text-lg font-bold text-sidebar-foreground">
+            API Forge
+          </span>
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
@@ -159,7 +179,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50",
                 )
               }
             >
@@ -182,7 +202,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50",
                 )
               }
             >
@@ -199,7 +219,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </Button>
             </NavLink>
           ))}
-
         </nav>
 
         <div className="border-t border-sidebar-border p-3">
@@ -208,7 +227,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors",
-                isActive ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/50"
+                isActive ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/50",
               )
             }
           >
@@ -233,9 +252,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+      <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
 }

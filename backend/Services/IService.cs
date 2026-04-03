@@ -1,6 +1,5 @@
 using backend.ApiResponse.OperationResults;
-
-namespace backend.Services;
+namespace backend.Service;
 
 public interface IService<T>
 {

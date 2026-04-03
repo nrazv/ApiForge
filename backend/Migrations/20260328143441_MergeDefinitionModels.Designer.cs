@@ -12,15 +12,15 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    [Migration("20260224203021_AddProjectIdToModelDefinitions")]
-    partial class AddProjectIdToModelDefinitions
+    [Migration("20260328143441_MergeDefinitionModels")]
+    partial class MergeDefinitionModels
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.13")
+                .HasAnnotation("ProductVersion", "9.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -293,6 +293,10 @@ namespace backend.Migrations
                     b.Property<Guid>("FieldId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("RecordId")
                         .HasColumnType("uniqueidentifier");
 
@@ -347,6 +351,46 @@ namespace backend.Migrations
                     b.HasIndex("OwnerId");
 
                     b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("backend.Projects.Entities.ProjectInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InvitedByUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("InvitedUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedByUserId");
+
+                    b.HasIndex("InvitedUserId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("ProjectInvitations");
                 });
 
             modelBuilder.Entity("backend.Projects.Entities.ProjectMember", b =>
@@ -483,6 +527,32 @@ namespace backend.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("backend.Projects.Entities.ProjectInvitation", b =>
+                {
+                    b.HasOne("backend.ApplicationUser.Entities.AppUser", "InvitedByUser")
+                        .WithMany()
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("backend.ApplicationUser.Entities.AppUser", "InvitedUser")
+                        .WithMany()
+                        .HasForeignKey("InvitedUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("backend.Projects.Entities.Project", "Project")
+                        .WithMany("Invitations")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InvitedByUser");
+
+                    b.Navigation("InvitedUser");
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("backend.Projects.Entities.ProjectMember", b =>
                 {
                     b.HasOne("backend.Projects.Entities.Project", "Project")
@@ -514,6 +584,8 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Projects.Entities.Project", b =>
                 {
+                    b.Navigation("Invitations");
+
                     b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
