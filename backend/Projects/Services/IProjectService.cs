@@ -1,5 +1,6 @@
 using backend.ApiResponse.OperationResults;
 using backend.Projects.Dtos;
+using backend.Projects.Entities;
 
 namespace backend.Projects.Services;
 
@@ -17,4 +18,5 @@ public interface IProjectService
     Task<OperationResult<bool>> CancelInvitationAsync(string userId, Guid projectId, Guid invitationId);
     Task<OperationResult<bool>> AcceptInvitationAsync(string userId, Guid invitationId);
     Task<OperationResult<bool>> DeclineInvitationAsync(string userId, Guid invitationId);
+    Task<Project?> GetByNameAsync(string projectName);
 }

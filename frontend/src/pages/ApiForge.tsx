@@ -8,12 +8,14 @@ import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiTab, ResourcesTab, SeedTab } from "@/components/api-forge";
+import { ApiModelDefinition } from "@/types/modeldefinition/ApiModelDefinition";
 
 interface Project {
   id: string;
   name: string;
   owner_id?: string;
   owner_username?: string;
+  projectApis: ApiModelDefinition[];
 }
 
 const activeProjectsKey = "activeProjects";
@@ -25,7 +27,9 @@ export default function ApiForge() {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"resources" | "api" | "seed">("resources");
+  const [activeTab, setActiveTab] = useState<"resources" | "api" | "seed">(
+    "resources",
+  );
   const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
 
   const parseErrorMessage = async (response: Response) => {
@@ -49,11 +53,13 @@ export default function ApiForge() {
     name?: string;
     ownerId?: string;
     ownerUsername?: string;
+    projectApis: ApiModelDefinition[];
   }): Project => ({
     id: data.Id ?? data.id ?? "",
     name: data.Name ?? data.name ?? "",
     owner_id: data.OwnerId ?? data.ownerId,
     owner_username: data.OwnerUsername ?? data.ownerUsername,
+    projectApis: data.projectApis,
   });
 
   const getActiveProjects = useCallback((): Project[] => {
@@ -61,7 +67,9 @@ export default function ApiForge() {
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw) as Project[];
-      return Array.isArray(parsed) ? parsed.filter((item) => item?.id && item?.name) : [];
+      return Array.isArray(parsed)
+        ? parsed.filter((item) => item?.id && item?.name)
+        : [];
     } catch {
       return [];
     }
@@ -75,19 +83,29 @@ export default function ApiForge() {
     localStorage.setItem(activeProjectsKey, JSON.stringify(next));
   }, []);
 
-  const upsertActiveProject = useCallback((project: Project) => {
-    const next = getActiveProjects();
-    if (!next.some((item) => item.id === project.id)) {
-      next.push({ id: project.id, name: project.name });
-    }
-    setActiveProjects(next);
-  }, [getActiveProjects, setActiveProjects]);
+  const upsertActiveProject = useCallback(
+    (project: Project) => {
+      const next = getActiveProjects();
+      if (!next.some((item) => item.id === project.id)) {
+        next.push({
+          id: project.id,
+          name: project.name,
+          projectApis: project.projectApis,
+        });
+      }
+      setActiveProjects(next);
+    },
+    [getActiveProjects, setActiveProjects],
+  );
 
-  const removeActiveProject = useCallback((id?: string) => {
-    if (!id) return;
-    const next = getActiveProjects().filter((item) => item.id !== id);
-    setActiveProjects(next);
-  }, [getActiveProjects, setActiveProjects]);
+  const removeActiveProject = useCallback(
+    (id?: string) => {
+      if (!id) return;
+      const next = getActiveProjects().filter((item) => item.id !== id);
+      setActiveProjects(next);
+    },
+    [getActiveProjects, setActiveProjects],
+  );
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -124,7 +142,9 @@ export default function ApiForge() {
 
         upsertActiveProject(project);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to load projects");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to load projects",
+        );
         setProjects([]);
         removeActiveProject(projectId);
         navigate("/projects/owned", { replace: true });
@@ -143,7 +163,9 @@ export default function ApiForge() {
   const activeProject = projects.find((p) => p.id === projectId);
   const projectName = activeProject?.name ?? "";
   const showOwner =
-    !!activeProject?.owner_id && !!user?.id && activeProject.owner_id !== user.id;
+    !!activeProject?.owner_id &&
+    !!user?.id &&
+    activeProject.owner_id !== user.id;
   const tabTriggerClass =
     "rounded-b-none text-xs border border-border bg-muted/10 px-5 py-2 font-semibold text-muted-foreground shadow-sm data-[state=active]:bg-white data-[state=active]:text-foreground";
 
@@ -155,9 +177,14 @@ export default function ApiForge() {
             <h1 className="text-2xl font-bold">{projectName || "Project"}</h1>
             {showOwner ? (
               <p className="text-xs text-muted-foreground">
-                Owner: {activeProject?.owner_username || activeProject?.owner_id}
+                Owner:{" "}
+                {activeProject?.owner_username || activeProject?.owner_id}
               </p>
-            ) : <p className="text-xs text-muted-foreground">You are the owner of this project</p>}
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                You are the owner of this project
+              </p>
+            )}
           </div>
         </div>
 
@@ -165,35 +192,33 @@ export default function ApiForge() {
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Database className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-muted-foreground">Select a project to manage APIs.</p>
+              <p className="text-muted-foreground">
+                Select a project to manage APIs.
+              </p>
             </CardContent>
           </Card>
         ) : (
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "resources" | "api" | "seed")}>
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) =>
+              setActiveTab(value as "resources" | "api" | "seed")
+            }
+          >
             <TabsList className="rounded-none inline-flex gap-2 border-b border-border bg-transparent p-0">
-              <TabsTrigger
-                value="resources"
-                className={tabTriggerClass}
-              >
+              <TabsTrigger value="resources" className={tabTriggerClass}>
                 Resources
               </TabsTrigger>
-              <TabsTrigger
-                value="api"
-                className={tabTriggerClass}
-              >
+              <TabsTrigger value="api" className={tabTriggerClass}>
                 API
               </TabsTrigger>
-              <TabsTrigger
-                value="seed"
-                className={tabTriggerClass}
-              >
+              <TabsTrigger value="seed" className={tabTriggerClass}>
                 Seed Data
               </TabsTrigger>
             </TabsList>
 
             <ResourcesTab projectId={projectId} />
 
-            <ApiTab />
+            <ApiTab projectApis={activeProject.projectApis} />
             <SeedTab />
           </Tabs>
         )}

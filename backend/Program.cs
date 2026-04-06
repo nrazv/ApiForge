@@ -11,6 +11,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 //-------------- App Configs -------------------
 builder.Services.ConfigureConnectionStringForEnv(builder.Configuration, builder.Environment);
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      policy =>
+                      {
+                          policy.WithOrigins("http://localhost:8081")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                      });
+});
+
+
+
 
 
 // Register Services
@@ -62,6 +77,7 @@ app.ApplyMigrationsOnRun();
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.UseCors(MyAllowSpecificOrigins);
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
