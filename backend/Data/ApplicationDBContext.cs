@@ -72,28 +72,34 @@ public class ApplicationDBContext : IdentityDbContext<AppUser>
             .HasForeignKey(p => p.OwnerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Entity<ModelDefinitionEntity>()
-            .HasMany(m => m.Fields)
-            .WithOne(f => f.Model)
-            .HasForeignKey(f => f.ModelId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Entity<ModelDefinitionEntity>()
-            .HasOne(m => m.Project)
-            .WithMany()
-            .HasForeignKey(m => m.ProjectId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Entity<ModelRecordEntity>()
-            .HasMany(r => r.Values)
-            .WithOne(v => v.Record)
-            .HasForeignKey(v => v.RecordId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Entity<FieldValueEntity>()
-            .HasOne(v => v.Field)
-            .WithMany()
-            .HasForeignKey(v => v.FieldId)
+        builder.Entity<Project>()
+            .HasMany(p => p.ProjectApis)
+            .WithOne(api => api.Project)
+            .HasForeignKey(api => api.ProjectId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // builder.Entity<ModelDefinitionEntity>()
+        //     .HasMany(m => m.Fields)
+        //     .WithOne(f => f.Model)
+        //     .HasForeignKey(f => f.ModelId)
+        //     .OnDelete(DeleteBehavior.Cascade);
+
+        // builder.Entity<ModelDefinitionEntity>()
+        //     .HasOne(m => m.Project)
+        //     .WithMany()
+        //     .HasForeignKey(m => m.ProjectId)
+        //     .OnDelete(DeleteBehavior.Cascade);
+
+        // builder.Entity<ModelRecordEntity>()
+        //     .HasMany(r => r.Values)
+        //     .WithOne(v => v.Record)
+        //     .HasForeignKey(v => v.RecordId)
+        //     .OnDelete(DeleteBehavior.Cascade);
+
+        // builder.Entity<FieldValueEntity>()
+        //     .HasOne(v => v.Field)
+        //     .WithMany()
+        //     .HasForeignKey(v => v.FieldId)
+        //     .OnDelete(DeleteBehavior.Restrict);
     }
 }

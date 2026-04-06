@@ -8,9 +8,9 @@ namespace backend.Definition.Controller;
 [Route("api/projects/{projectId:guid}/definitions")]
 public class ProjectDefinitionsController : ControllerBase
 {
-    private readonly IDefinitionService service;
+    private readonly IModelDefinitionService service;
 
-    public ProjectDefinitionsController(IDefinitionService definitionService)
+    public ProjectDefinitionsController(IModelDefinitionService definitionService)
     {
         service = definitionService;
     }

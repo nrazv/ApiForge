@@ -8,6 +8,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS build
 WORKDIR /src
 COPY ["backend/backend.csproj", "."]
 RUN dotnet restore "./backend.csproj"
+COPY backend/appsettings.json .
 COPY . .
 RUN dotnet publish "./backend.csproj" -c Release -o /app/publish /p:UseAppHost=false
 

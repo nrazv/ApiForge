@@ -1,9 +1,10 @@
+using System.Collections;
 using backend.ApiResponse.OperationResults;
 using backend.ApplicationUser.Entities;
 using backend.Data;
+using backend.Definition.Dto;
 using backend.Projects.Dtos;
 using backend.Projects.Entities;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,17 +25,22 @@ internal class ProjectService : IProjectService
     {
         var projects = await _dbContext.Projects
             .Where(p => p.Members.Any(m => m.UserId == userId))
+            .Include(p => p.ProjectApis)
             .Select(p => new ProjectDto(
                 p.Id,
                 p.Name,
                 p.OwnerId,
                 p.Owner != null ? p.Owner.UserName ?? string.Empty : string.Empty,
-                p.CreatedAt
-            ))
-            .ToListAsync();
+                p.CreatedAt,
+                p.ProjectApis.Select(api => new ModelDefinitionResponseDto(api.Id, api.ProjectId, api.Name,
+                        api.Fields.Select(f => new FieldDefinitionResponseDto(f.Id, f.Name, f.Type)).ToList()
+                )).ToList()
+            )).ToListAsync();
 
         return OperationResult<IEnumerable<ProjectDto>>.Success(projects);
     }
+
+
 
     public async Task<OperationResult<ProjectDto>> CreateProjectAsync(string userId, CreateProjectDto dto)
     {
@@ -63,7 +69,8 @@ internal class ProjectService : IProjectService
             project.Name,
             project.OwnerId,
             owner?.UserName ?? string.Empty,
-            project.CreatedAt
+            project.CreatedAt,
+            new List<ModelDefinitionResponseDto>()
         ));
     }
 
@@ -92,7 +99,8 @@ internal class ProjectService : IProjectService
             project.Name,
             project.OwnerId,
             owner?.UserName ?? string.Empty,
-            project.CreatedAt
+            project.CreatedAt,
+            new List<ModelDefinitionResponseDto>()
         ));
     }
 
@@ -459,5 +467,10 @@ internal class ProjectService : IProjectService
     private static bool IsMember(Project project, string userId)
     {
         return project.Members.Any(m => m.UserId == userId);
+    }
+
+    public async Task<Project?> GetByNameAsync(string projectName)
+    {
+        return await _dbContext.Projects.FirstOrDefaultAsync(p => p.Name == projectName);
     }
 }

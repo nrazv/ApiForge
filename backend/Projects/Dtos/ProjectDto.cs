@@ -1,3 +1,5 @@
+using backend.Definition.Dto;
+
 namespace backend.Projects.Dtos;
 
 public record ProjectDto(
@@ -5,5 +7,6 @@ public record ProjectDto(
     string Name,
     string OwnerId,
     string OwnerUsername,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    List<ModelDefinitionResponseDto> ProjectApis
 );

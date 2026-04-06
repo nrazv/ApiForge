@@ -4,48 +4,28 @@ using backend.Definition.Dto;
 using backend.Definition.Entities;
 using backend.Definition.Factory;
 using backend.Definition.Repository;
+using backend.Projects.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Definition.Service;
 
 public class ModelDefinitionService : IModelDefinitionService
 {
-    private readonly IDefinitionRepository repository;
-    private readonly ApplicationDBContext dbContext;
+    private readonly IProjectService _projectService;
+    private readonly IDefinitionRepository _repository;
+    private readonly ApplicationDBContext _dbContext;
 
 
-    public ModelDefinitionService(IDefinitionRepository definitionRepository, ApplicationDBContext applicationDbContext)
+    public ModelDefinitionService(IDefinitionRepository definitionRepository, ApplicationDBContext applicationDbContext, IProjectService projectService)
     {
-        repository = definitionRepository;
-        dbContext = applicationDbContext;
+        _projectService = projectService;
+        _repository = definitionRepository;
+        _dbContext = applicationDbContext;
     }
 
-    [Obsolete("Use CreateAsync(Guid projectId, ModelDefinitionCreateDto dto) instead.")]
-    public Task<OperationResult<ModelDefinitionResponseDto>> CreateAsync(ModelDefinitionCreateDto dto)
+    public async Task<OperationResult<ModelDefinitionResponseDto>> GetByNameAsync(string name)
     {
-        var result = OperationResult<ModelDefinitionResponseDto>.Failure(
-            new OperationError("ProjectId is required", 400)
-        );
-        return Task.FromResult(result);
-    }
-
-    public async Task<OperationResult<ModelDefinitionResponseDto>> CreateAsync(Guid projectId, ModelDefinitionCreateDto dto)
-    {
-        var newModelDefinition = DefinitionFactory.FromModelDefinitionCreateDto(projectId, dto);
-        var result = await repository.AddAsync(newModelDefinition);
-
-        if (result is null)
-        {
-            return OperationResult<ModelDefinitionResponseDto>.Failure(new OperationError("Category creation failed", 400));
-        }
-
-        var response = DefinitionFactory.FromModelDefinitionEntity(result);
-        return OperationResult<ModelDefinitionResponseDto>.Success(response);
-    }
-
-    public async Task<OperationResult<ModelDefinitionResponseDto>> FindByNameAsync(string name)
-    {
-        var model = await repository.FindAsync(e => e.Name == name);
+        var model = await _repository.FindAsync(e => e.Name == name);
 
         if (model is null)
         {
@@ -60,11 +40,11 @@ public class ModelDefinitionService : IModelDefinitionService
 
     public async Task<ModelDefinitionEntity?> GetModelByNameAsync(string name)
     {
-        return await repository.FindAsync(e => e.Name == name);
+        return await _repository.FindAsync(e => e.Name == name);
     }
     public async Task<OperationResult<IEnumerable<ModelDefinitionResponseDto>>> ListByProjectAsync(Guid projectId)
     {
-        var models = await repository.FindAllAsync(e => e.ProjectId == projectId);
+        var models = await _repository.FindAllAsync(e => e.ProjectId == projectId);
         var response = models.Select(DefinitionFactory.FromModelDefinitionEntity).ToList();
         return OperationResult<IEnumerable<ModelDefinitionResponseDto>>.Success(response);
     }
@@ -73,7 +53,7 @@ public class ModelDefinitionService : IModelDefinitionService
     {
         try
         {
-            var deleted = await repository.DeleteWhereAsync(e => e.Id == definitionId && e.ProjectId == projectId);
+            var deleted = await _repository.DeleteWhereAsync(e => e.Id == definitionId && e.ProjectId == projectId);
             if (deleted == 0)
             {
                 return OperationResult<bool>.Failure(new OperationError("Model not found", 404));
@@ -89,7 +69,7 @@ public class ModelDefinitionService : IModelDefinitionService
 
     public async Task<OperationResult<bool>> DeleteFieldAsync(Guid projectId, Guid definitionId, Guid fieldId)
     {
-        var model = await repository.FindAsync(e => e.Id == definitionId && e.ProjectId == projectId);
+        var model = await _repository.FindAsync(e => e.Id == definitionId && e.ProjectId == projectId);
         if (model is null)
         {
             return OperationResult<bool>.Failure(new OperationError("Model not found", 404));
@@ -97,7 +77,7 @@ public class ModelDefinitionService : IModelDefinitionService
 
         try
         {
-            var deleted = await dbContext.Fields
+            var deleted = await _dbContext.Fields
                 .Where(field => field.Id == fieldId && field.ModelId == definitionId)
                 .ExecuteDeleteAsync();
 
@@ -120,7 +100,7 @@ public class ModelDefinitionService : IModelDefinitionService
         FieldDefinitionCreateDto dto
     )
     {
-        var model = await repository.FindAsync(e => e.Id == definitionId && e.ProjectId == projectId);
+        var model = await _repository.FindAsync(e => e.Id == definitionId && e.ProjectId == projectId);
         if (model is null)
         {
             return OperationResult<FieldDefinitionResponseDto>.Failure(new OperationError("Model not found", 404));
@@ -136,8 +116,8 @@ public class ModelDefinitionService : IModelDefinitionService
 
         try
         {
-            await dbContext.Fields.AddAsync(field);
-            await dbContext.SaveChangesAsync();
+            await _dbContext.Fields.AddAsync(field);
+            await _dbContext.SaveChangesAsync();
         }
         catch (DbUpdateException)
         {
@@ -147,5 +127,29 @@ public class ModelDefinitionService : IModelDefinitionService
         return OperationResult<FieldDefinitionResponseDto>.Success(
             new FieldDefinitionResponseDto(field.Id, field.Name, field.Type)
         );
+    }
+
+    public async Task<ModelDefinitionEntity?> FindByNameAsync(string name)
+    {
+        return await _repository.FindAsync(e => e.Name == name);
+    }
+
+    public async Task<OperationResult<ModelDefinitionResponseDto>> CreateAsync(Guid projectId, ModelDefinitionCreateDto dto)
+    {
+        var newModelDefinition = DefinitionFactory.FromModelDefinitionCreateDto(projectId, dto);
+        var result = await _repository.AddAsync(newModelDefinition);
+
+        if (result is null)
+        {
+            return OperationResult<ModelDefinitionResponseDto>.Failure(new OperationError($"Failed to create a new api", 400));
+        }
+
+        var response = DefinitionFactory.FromModelDefinitionEntity(result);
+        return OperationResult<ModelDefinitionResponseDto>.Success(response);
+    }
+
+    public Task<OperationResult<ModelDefinitionResponseDto?>> CreateAsync(ModelDefinitionCreateDto obj)
+    {
+        throw new NotImplementedException();
     }
 }
