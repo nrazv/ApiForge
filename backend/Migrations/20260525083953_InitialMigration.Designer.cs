@@ -12,15 +12,15 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    [Migration("20260328143441_MergeDefinitionModels")]
-    partial class MergeDefinitionModels
+    [Migration("20260525083953_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.14")
+                .HasAnnotation("ProductVersion", "9.0.16")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -246,7 +246,7 @@ namespace backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("ModelId")
+                    b.Property<Guid?>("ModelId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Name")
@@ -469,9 +469,7 @@ namespace backend.Migrations
                 {
                     b.HasOne("backend.Definition.Entities.ModelDefinitionEntity", "Model")
                         .WithMany("Fields")
-                        .HasForeignKey("ModelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ModelId");
 
                     b.Navigation("Model");
                 });
@@ -479,9 +477,9 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Definition.Entities.ModelDefinitionEntity", b =>
                 {
                     b.HasOne("backend.Projects.Entities.Project", "Project")
-                        .WithMany()
+                        .WithMany("ProjectApis")
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Project");
                 });
@@ -491,7 +489,7 @@ namespace backend.Migrations
                     b.HasOne("backend.Definition.Entities.FieldDefinitionEntity", "Field")
                         .WithMany()
                         .HasForeignKey("FieldId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("backend.ModelRecord.Entities.ModelRecordEntity", "Record")
@@ -587,6 +585,8 @@ namespace backend.Migrations
                     b.Navigation("Invitations");
 
                     b.Navigation("Members");
+
+                    b.Navigation("ProjectApis");
                 });
 #pragma warning restore 612, 618
         }
