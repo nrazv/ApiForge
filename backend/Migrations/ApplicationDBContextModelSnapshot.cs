@@ -17,7 +17,7 @@ namespace backend.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.14")
+                .HasAnnotation("ProductVersion", "9.0.16")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -274,14 +274,9 @@ namespace backend.Migrations
                     b.Property<Guid?>("ProjectId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ProjectId1")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ProjectId");
-
-                    b.HasIndex("ProjectId1");
 
                     b.ToTable("Models");
                 });
@@ -471,8 +466,7 @@ namespace backend.Migrations
                 {
                     b.HasOne("backend.Definition.Entities.ModelDefinitionEntity", "Model")
                         .WithMany("Fields")
-                        .HasForeignKey("ModelId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("ModelId");
 
                     b.Navigation("Model");
                 });
@@ -480,13 +474,9 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Definition.Entities.ModelDefinitionEntity", b =>
                 {
                     b.HasOne("backend.Projects.Entities.Project", "Project")
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("backend.Projects.Entities.Project", null)
                         .WithMany("ProjectApis")
-                        .HasForeignKey("ProjectId1");
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Project");
                 });
@@ -496,7 +486,7 @@ namespace backend.Migrations
                     b.HasOne("backend.Definition.Entities.FieldDefinitionEntity", "Field")
                         .WithMany()
                         .HasForeignKey("FieldId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("backend.ModelRecord.Entities.ModelRecordEntity", "Record")
