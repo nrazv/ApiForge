@@ -13,7 +13,7 @@ export default function ApiTab({ projectApis }: Props) {
     <TabsContent value="api" className="mt-4">
       {projectApis.length <= 0 && NoApiMessage()}
       {projectApis.length > 0 &&
-        projectApis.map((p) => <ApiDetails apiModel={p} />)}
+        projectApis.map((p, key) => <ApiDetails apiModel={p} key={key} />)}
     </TabsContent>
   );
 

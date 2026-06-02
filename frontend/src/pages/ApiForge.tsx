@@ -219,7 +219,7 @@ export default function ApiForge() {
             <ResourcesTab projectId={projectId} />
 
             <ApiTab projectApis={activeProject.projectApis} />
-            <SeedTab />
+            <SeedTab  projectApis={activeProject.projectApis}/>
           </Tabs>
         )}
       </motion.div>
